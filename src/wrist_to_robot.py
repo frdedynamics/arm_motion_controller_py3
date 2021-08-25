@@ -9,16 +9,13 @@ UR5e init \base_link \tool0 TF at initial pose:
             in RPY (radian) [-1.542, 0.024, 0.010]
             in RPY (degree) [-88.374, 1.403, 0.549]
 """
-import sys
-import math
 import numpy as np
 
 import rospy
 from geometry_msgs.msg import Pose, Point, Quaternion
 
-sys.path.append("/home/gizem/catkin_ws/src/ur5_with_hand_gazebo/src/Classes")
-from DH_matrices import DHmatrices
-import Kinematics_with_Quaternions as kinematic
+from Classes.DH_matrices import DHmatrices
+import Classes.Kinematics_with_Quaternions as kinematic
 
 DHmatrices = DHmatrices()
 
