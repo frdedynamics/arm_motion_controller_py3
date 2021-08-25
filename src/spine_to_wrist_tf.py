@@ -20,7 +20,7 @@ if __name__ == '__main__':
     rospy.init_node('spine_to_wrist_tf_node')
     tfBuffer = tf2_ros.Buffer()
     listener = tf2_ros.TransformListener(tfBuffer)
-    rate = rospy.Rate(10.0)
+    rate = rospy.Rate(100.0)
     print("Publishing wrist poses")
 
 

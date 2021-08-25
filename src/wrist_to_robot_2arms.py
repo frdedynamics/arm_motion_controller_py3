@@ -43,7 +43,7 @@ if __name__ == '__main__':
     sub_l_wrist = rospy.Subscriber('/wrist_left', Pose, cb_l_wrist)
     sub_r_wrist = rospy.Subscriber('/wrist_right', Pose, cb_r_wrist)
     rospy.init_node('wrist_to_robot_2arms')
-    rate = rospy.Rate(10.0)
+    rate = rospy.Rate(100.0)
     print("wrist_to_robot_2arms node started")
 
     mirror_state = None
