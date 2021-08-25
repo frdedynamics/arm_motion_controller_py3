@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<launch>
+
+  <!-- <param name="human_description" command="$(find xacro)/xacro '$(find arm_motion_controller_pkg)/urdf/human/2arms_2dof_elbows.xacro'"/> -->
+  <param name="human_description" command="$(find xacro)/xacro '$(find arm_motion_controller_py3)/urdf/human/chest_included.xacro'"/>
+
+  <!-- Combine joint values -->
+  <node name="human_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher">
+    <remap from="robot_description" to="human_description" />
+    <remap from="joint_states" to="/joint_states_human" />
+  </node>
+
+  <!-- Show in Rviz   -->
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find arm_motion_controller_py3)/launch/config/config.rviz"/> 
+
+  <!-- publish joint state
+  <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
+    <param name="use_gui" value="True"/>
+    <remap from="joint_states" to="/joint_states_human" />
+  </node>-->
+
+    <!-- Start IMU subscriber node (after awindamonitor started) -->
+  <node name="imu_subscriber_node" type="imu_subscriber_node.py" pkg="arm_motion_controller_py3" />
+  
+  <!-- Start chest-to-wrist tf. Creates arm pose 
+  <node name="chest_to_wrist_tf" type="chest_to_wrist_tf.py" pkg="arm_motion_controller_pkg" />-->
+  <!-- Start spine-to-wrist tf. Creates upper-body pose -->
+  <node name="spine_to_wrist_tf" type="spine_to_wrist_tf.py" pkg="arm_motion_controller_py3" />
+  
+  <!-- From 2-arm motion, create a goal pose motion for robot 
+  <node name="wrist_to_robot" type="wrist_to_robot_2arms.py" pkg="arm_motion_controller_pkg" />-->
+
+</launch>
+
+
