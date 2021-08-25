@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 
 """
-Node runner for /Classes/robot_move_with_ik_class.py
+Node runner for /Classes/robot_move_with_ur_rtde.py
 """
 
 import rospy
-from Classes.robot_move_with_ik_class_2arms import RobotCommander
+from Classes.robot_move_with_ur_rtde import RobotCommander
 from math import pi
 
 
 def main(): 
-	Robot = RobotCommander(rate=100, start_node=True)
+	Robot = RobotCommander(start_node=True)
 	Robot.init_subscribers_and_publishers()
 	# Robot.start_server()
 	try:

@@ -16,53 +16,47 @@ from math import pi
 from math import radians as d2r
 import numpy as np
 
-from geometry_msgs.msg import Pose, Point, Quaternion
+from geometry_msgs.msg import Pose, Point, Quaternion, Vector3
 from sensor_msgs.msg import JointState
 from std_msgs.msg import String, Int16, Float64, Bool
 
-import actionlib
-import control_msgs.msg as cm
-import trajectory_msgs.msg as tm
-
 from . import Kinematics_with_Quaternions as kinematic
+
+from rtde_control import RTDEControlInterface as RTDEControl
+import rtde_receive
 
 
 class RobotCommander:
-	def __init__(self, rate=100, start_node=False, s=1.0, k=1.0):
+	def __init__(self, rate=125, start_node=False, s=1.0, k=1.0):
 		"""Initializes the robot commander
 			@params s: motion hand - steering hand scale
 			@params k: target hand pose - robot pose scale"""
+		self.rtde_c = RTDEControl("172.31.1.144", RTDEControl.FLAG_USE_EXT_UR_CAP)
+		self.rtde_r = rtde_receive.RTDEReceiveInterface("172.31.1.144")
 
 		if start_node == True:
-			rospy.init_node("robot_move_with_ik")
+			rospy.init_node("robot_move_with_ur_rtde")
 			self.r = rospy.Rate(rate)
-			print("robot_move_with_ik Node Created")
+			print("robot_move_with_ur_rtde Node Created")
 
-		# self.robot_init = Pose(Point(-0.136, 0.490, 0.687), Quaternion(-0.697, 0.005, 0.012, 0.717))
-		# self.robot_init = Pose(Point(0.3921999999969438, 0.08119999999999986,  0.6871000000019204), Quaternion(0.0, 0.0, 0.0, 1.0)) # home = [0.0, -pi/2, pi/2, pi, -pi/2, 0.0]
-		# self.robot_init = Pose(Point(-0.08119999999999973, 0.3921999999969438,  0.6871000000019204), Quaternion(0.0, 0.0, 0.707, 0.707))  # home = [pi/2, -pi/2, pi/2, pi, -pi/2, 0.0]
 
-		self.robot_init = Pose(Point(0.0541860145827, -0.584139173043,  0.189550620537), Quaternion(0.542714478609, -0.464001894512, -0.516758121814, 0.472360328708))  # home = [pi/2, -pi/2, pi/2, pi, -pi/2, 0.0]
-		self.release_approach = Pose(Point(-0.465337306348, -0.226618254474, 0.0329134063267), Quaternion(0.561379785159, -0.440200301152, -0.496712122833, 0.494321250515))
-		self.release = Pose(Point(-0.460710112314, -0.353837082507, 0.0171878089798), Quaternion(0.561713498746, -0.4400991731221, -0.496436115888, 0.494309463783))
+		self.robot_init = self.rtde_r.getActualTCPPose()
+		self.release_approach = self.robot_init ## TODO
+		self.release = self.robot_init ## TODO
 
 		print("============ Arm current pose: ", self.robot_init)
 		# print "click Enter to continue"
 		# dummy_input = raw_input()
 
-		self.home = [-1.61718929, -0.90831965,  1.47090709, -0.43931657,  1.48942041, -1.56104302]
+		self.home = self.robot_init
 		self.target_pose = Pose()
 		self.motion_hand_pose = Pose()
 		self.hand_grip_strength = Int16()
 		self.steering_hand_pose = Pose()
-		self.openrave_joint_angles = JointState()
-		self.openrave_joint_angles.position = self.home
-		self.robot_pose = Pose()
-		self.robot_joint_angles = JointState()
+		self.robot_pose = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+		self.robot_joint_angles = self.rtde_r.getActualQ()
 
-		self.tee_calc = Pose()
-
-		self.robot_colift_init = Pose()
+		self.robot_colift_init = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 		self.target_pose_colift_init = Pose()
 		self.motion_hand_colift_init = Pose()
 		self.motion_hand_colift_pos_ch = Point()
@@ -77,16 +71,6 @@ class RobotCommander:
 		self.colift_flag = False
 		self.joint_flag = False
 
-		self.g = cm.FollowJointTrajectoryGoal()
-		self.g.trajectory = tm.JointTrajectory()
-		self.g.trajectory.joint_names = ['elbow_joint', 'shoulder_lift_joint', 'shoulder_pan_joint',
-               'wrist_1_joint', 'wrist_2_joint', 'wrist_3_joint'] # gazebo model has this interesting order of joints
-
-		# self.states = { "1": "IDLE",
-		# 				"2": "APPROACH",
-		# 				"3": "LIFT",
-		# 				"4": "RELEASE"
-		# 			  }
 		self.state = "IDLE"
 		self.role = "HUMAN_LEADING"  # of "ROBOT_LEADING"
 		self.hrc_status = String()
@@ -96,9 +80,6 @@ class RobotCommander:
 		self.sub_hand_grip_strength = rospy.Subscriber('/robotiq_grip_gap', Int16, self.cb_hand_grip_strength)
 		self.sub_hand_pose = rospy.Subscriber('/hand_pose', Pose, self.cb_hand_pose)
 		self.sub_steering_pose = rospy.Subscriber('/steering_pose', Pose, self.cb_steering_pose)
-		self.sub_tee_calc = rospy.Subscriber('/Tee_calculated', Pose, self.cb_tee_calc)
-		self.sub_openrave_joints = rospy.Subscriber('/joint_states_openrave', JointState, self.cb_openrave_joints)
-		self.sub_robot_joints = rospy.Subscriber('/joint_states', JointState, self.cb_robot_joints)
 		self.pub_tee_goal = rospy.Publisher('/Tee_goal_pose', Pose, queue_size=1)
 		self.pub_hrc_status = rospy.Publisher('/hrc_status', String, queue_size=1)
 		self.pub_grip_cmd = rospy.Publisher('/cmd_grip', Bool, queue_size=1)
@@ -124,23 +105,6 @@ class RobotCommander:
 		""" Subscribes right hand pose """
 		self.steering_hand_pose = msg
 
-	def cb_tee_calc(self, msg):
-		""" Subscribes openrave calculated pose """
-		self.tee_calc = msg
-
-	
-	def cb_openrave_joints(self, msg):
-		""" Subscribes calculated joint angles from IKsolver """
-		self.openrave_joint_angles = msg
-		# print "openrave joint angles:", self.openrave_joint_angles
-
-
-	def cb_robot_joints(self, msg):
-		""" Subscribes real robot angles """
-		self.robot_joint_angles = msg
-		self.joint_flag = True
-		# print "robot joints:", self.robot_joint_angles.position
-
 
 	def cartesian_control_2_arms(self):	
 		self.target_pose.position.x = self.motion_hand_pose.position.x + self.s * self.steering_hand_pose.position.x
@@ -150,11 +114,12 @@ class RobotCommander:
 
 		# print "robot_pose:", self.robot_pose.position
 		corrected_target_pose = kinematic.q_rotate(self.human_to_robot_init_orientation, self.target_pose.position)
-		self.robot_pose.position.x = self.robot_init.position.x + self.k * corrected_target_pose[0]
-		self.robot_pose.position.y = self.robot_init.position.y - self.k * corrected_target_pose[1]
-		self.robot_pose.position.z = self.robot_init.position.z + self.k * corrected_target_pose[2]
+		print(type(self.robot_pose), type(self.robot_init), type(corrected_target_pose))
+		self.robot_pose[0] = self.robot_init[0] + self.k * corrected_target_pose[0]
+		self.robot_pose[1] = self.robot_init[1] - self.k * corrected_target_pose[1]
+		self.robot_pose[2] = self.robot_init[2] + self.k * corrected_target_pose[2]
 		# self.robot_pose.orientation = kinematic.q_multiply(self.robot_init.orientation, kinematic.q_multiply(self.hand_init_orientation, self.motion_hand_pose.orientation))
-		self.robot_pose.orientation = self.robot_init.orientation
+		self.robot_pose[3:] = self.robot_init[3:]
 
 		self.motion_hand_colift_init = self.motion_hand_pose
 
@@ -163,21 +128,15 @@ class RobotCommander:
 		self.motion_hand_colift_pos_ch.x = self.motion_hand_pose.position.x - self.motion_hand_colift_init.position.x
 		self.motion_hand_colift_pos_ch.y = self.motion_hand_pose.position.y - self.motion_hand_colift_init.position.y
 		self.motion_hand_colift_pos_ch.z = self.motion_hand_pose.position.z - self.motion_hand_colift_init.position.z
-		# print "self.robot_colift_init:", self.robot_colift_init
-		# print "self.motion_hand_colift_pos_ch:", self.motion_hand_colift_pos_ch
 
 		corrected_motion_hand_pose = kinematic.q_rotate(self.human_to_robot_init_orientation, self.motion_hand_colift_pos_ch)
-		# print "corrected_motion_hand_pose:", corrected_motion_hand_pose
 		
-		# self.robot_pose.position.x = self.robot_colift_init.position.x + self.k * self.motion_hand_colift_pos_ch.x
-		# self.robot_pose.position.y = self.robot_colift_init.position.y + self.k * self.motion_hand_colift_pos_ch.y
-		# self.robot_pose.position.z = self.robot_colift_init.position.z + self.k * self.motion_hand_colift_pos_ch.z
 
-		self.robot_pose.position.x = self.robot_colift_init.position.x + self.k * corrected_motion_hand_pose[0]
-		self.robot_pose.position.y = self.robot_colift_init.position.y - self.k * corrected_motion_hand_pose[1]
-		self.robot_pose.position.z = self.robot_colift_init.position.z + self.k * corrected_motion_hand_pose[2]
+		self.robot_pose[0] = self.robot_colift_init[0] + self.k * corrected_motion_hand_pose[0]
+		self.robot_pose[1] = self.robot_colift_init[1] - self.k * corrected_motion_hand_pose[1]
+		self.robot_pose[2] = self.robot_colift_init[2] + self.k * corrected_motion_hand_pose[2]
 		# self.robot_pose.orientation = kinematic.q_multiply(self.robot_init.orientation, kinematic.q_multiply(self.hand_init_orientation, self.motion_hand_pose.orientation))
-		self.robot_pose.orientation = self.robot_colift_init.orientation
+		self.robot_pose[3:] = self.robot_init[3:]
 
 
 	@staticmethod
@@ -195,9 +154,9 @@ class RobotCommander:
 		if not result:
 			self.pub_tee_goal.publish(goal)
 			rospy.sleep(0.5)
-			print(self.robot_joint_angles.position, "current joints")
-			print(self.openrave_joint_angles.position, "openrave joints")
-			result = RobotCommander.jointcomp(self.robot_joint_angles.position, self.openrave_joint_angles.position)
+			print(self.robot_joint_angles, "current joints")
+			print(goal.position, "goal joints")
+			result = RobotCommander.jointcomp(self.robot_joint_angles, goal.position)
 			print("result", result)
 		return result
 
@@ -215,7 +174,7 @@ class RobotCommander:
 					else:
 						self.state == "CO-LIFT"
 						if not self.colift_flag:
-							self.robot_colift_init = self.tee_calc
+							self.robot_colift_init = self.rtde_r.getActualTCPPose()
 							self.colift_flag = True
 			elif(self.steering_hand_pose.orientation.w > 0.707 and self.steering_hand_pose.orientation.x < 0.707):
 				self.state = "IDLE"
@@ -239,7 +198,9 @@ class RobotCommander:
 					else:
 						self.cartesian_control_2_arms()
 						
-					self.pub_tee_goal.publish(self.robot_pose)
+					robot_pose_pose = Pose(Point(self.robot_pose[0], self.robot_pose[1], self.robot_pose[2]), Quaternion())
+					self.pub_tee_goal.publish(robot_pose_pose)
+					self.rtde_c.servoL(self.robot_pose, 0.5, 0.3, 0.001, 0.1, 300)
 				
 				elif(self.state == "IDLE"):
 					pass
