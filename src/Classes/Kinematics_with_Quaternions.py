@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """
 In this class different kinematic and dynamic equalities are calculated
@@ -23,7 +22,7 @@ import pyquaternion as pq
 from sensor_msgs.msg import JointState
 from sensor_msgs.msg import Imu
 from geometry_msgs.msg import Vector3
-from geometry_msgs.msg import Quaternion, Point
+from geometry_msgs.msg import Quaternion
 from tf.transformations import quaternion_matrix as q2m
 from tf.transformations import euler_from_matrix as m2e
 from tf.transformations import euler_from_quaternion as q2e
@@ -46,6 +45,33 @@ def q_scale(q, s):
     '''
     q_scaled = Quaternion(s*q.x, s*q.y, s*q.z, s*q.w)
     return q_scaled
+    
+def v_to_q(v):
+    '''
+	Convert a vector to a quaternion
+	'''
+    
+    v_converted = Quaternion(0, 0, 0, 1.0)
+		
+    if (type(v) == np.ndarray and v.size == 3):
+        v_converted = Quaternion(v[0], v[1], v[2], 0.0)
+        return v_converted
+    else:
+        print("Unknown type v_to_q")
+        return v_converted
+            
+def q_to_v(q):
+    '''
+	Convert a quaternion to back to the vector form again
+	'''
+    q_converted = np.array([0.0, 0.0, 0.0])
+		
+    if (type(q) == Quaternion and q.w == 0.0):
+        q_converted = np.array([q.x, q.y, q.z])
+        return q_converted
+    else:
+        print("Unknown type q_to_v")
+        return q_converted
 
 
 def q_rotate(q, v):
@@ -63,10 +89,6 @@ def q_rotate(q, v):
                           2*v[0]*(q.w*q.z + q.x*q.y) + v[1]*(q.w**2 - q.x**2 + q.y**2 - q.z**2) + 2*v[2]*(q.y*q.z - q.w*q.x),
                           2*v[0]*(q.x*q.z - q.w*q.y) + 2*v[1]*(q.w*q.x + q.y*q.z) + v[2]*(q.w**2 - q.x**2 - q.y**2 + q.z**2)])
     elif type(q) == Quaternion and type(v) == Vector3:
-        v_rotated = np.array([v.x*(q.w**2 + q.x**2 - q.y**2 - q.z**2) + 2*v.y*(q.x*q.y-q.w*q.z) + 2*v.z*(q.w*q.y + q.x*q.z),
-                          2*v.x*(q.w*q.z + q.x*q.y) + v.y*(q.w**2 - q.x**2 + q.y**2 - q.z**2) + 2*v.z*(q.y*q.z - q.w*q.x),
-                          2*v.x*(q.x*q.z - q.w*q.y) + 2*v.y*(q.w*q.x + q.y*q.z) + v.z*(q.w**2 - q.x**2 - q.y**2 + q.z**2)])
-    elif type(q) == Quaternion and type(v) == Point:
         v_rotated = np.array([v.x*(q.w**2 + q.x**2 - q.y**2 - q.z**2) + 2*v.y*(q.x*q.y-q.w*q.z) + 2*v.z*(q.w*q.y + q.x*q.z),
                           2*v.x*(q.w*q.z + q.x*q.y) + v.y*(q.w**2 - q.x**2 + q.y**2 - q.z**2) + 2*v.z*(q.y*q.z - q.w*q.x),
                           2*v.x*(q.x*q.z - q.w*q.y) + 2*v.y*(q.w*q.x + q.y*q.z) + v.z*(q.w**2 - q.x**2 - q.y**2 + q.z**2)])
@@ -159,13 +181,14 @@ def v_magnitude(v):
 
 
 def q_norm(q):
-    try:
-        q_normalized = q_scale(q, q_magnitude(q)**(-1))
-    except ZeroDivisionError:
-        print("Magnitude is zero")
-        q_normalized = q
-    finally:
-        return q_normalized
+		q_normalized = q
+		try:
+				q_normalized = q_scale(q, q_magnitude(q)**(-1))
+		except ZeroDivisionError:
+				print("Magnitude is zero")
+				q_normalized = q
+		finally:
+				return q_normalized
 
 
 def find_angle(a, b):
@@ -196,7 +219,7 @@ def find_angle(a, b):
     # a2 = q_rotate(q, a)
     # print a2, b/v_magnitude(b)
 
-#  Interestingly, this doesn't give me ZeroDivisionError. Instead it gives RuntimeWarning. Both doesn't work in any ways. Let's do it in a shitty way you shit python3. Is that what you want? ARGHH...
+#  Interestingly, this doesn't give me ZeroDivisionError. Instead it gives RuntimeWarning. Both doesn't work in any ways. Let's do it in a shitty way you shit python. Is that what you want? ARGHH...
     # try:
     #     a = a/v_magnitude(a)
     #     b = b/v_magnitude(b)
