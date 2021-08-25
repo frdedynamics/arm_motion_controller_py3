@@ -32,7 +32,7 @@ class DHmatrices:
 		self.htm = np.zeros((4, 4), dtype = float)
 
 
-		print "Matrices created"
+		print("Matrices created")
 
 
 	def angle_to_rotm(self, theta, alpha):
@@ -122,7 +122,7 @@ class DHmatrices:
 			pose_rotm[:3, 3] = pose_link
 			result = pose_rotm
 		else:
-			print "unknown type"
+			print("unknown type")
 			result = None
 		return result
 		
@@ -151,7 +151,7 @@ class DHmatrices:
 			param_z = sqrt(r**2 - (x-a)**2 - (y-b)**2) + c
 			return param_z
 		else:
-			print "Unknown parameter selection"
+			print("Unknown parameter selection")
 			return 0
 		
 		
