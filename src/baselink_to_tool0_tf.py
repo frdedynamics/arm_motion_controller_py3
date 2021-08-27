@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 
 """
-This is a node to publish tool0 pose with respect to base link
+This is a node to publish tool0 pose with respect to base link. I only use it if I need to record data.
 """
 
 import rospy

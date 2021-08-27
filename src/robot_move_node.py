@@ -2,6 +2,7 @@
 
 """
 Node runner for /Classes/robot_move_with_ur_rtde.py
+@Depreciated name: robot_move_with_ik_node.py
 """
 
 import rospy
@@ -12,7 +13,6 @@ from math import pi
 def main(): 
 	Robot = RobotCommander(start_node=True)
 	Robot.init_subscribers_and_publishers()
-	# Robot.start_server()
 	try:
 		while not rospy.is_shutdown():
 			Robot.update()

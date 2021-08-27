@@ -1,17 +1,9 @@
 #! /usr/bin/env python3
 
 """
-Subscribes one wrist pose (for now) w.r.t chest. Move robot w.r.t UR5e initial pose at home.
-
-UR5e init \base_link \tool0 TF at initial pose:
-- Translation: [-0.136, 0.490, 0.687]
-- Rotation: in Quaternion [-0.697, 0.005, 0.012, 0.717]
-            in RPY (radian) [-1.542, 0.024, 0.010]
-            in RPY (degree) [-88.374, 1.403, 0.549]
+Subscribes two hand poses and drives the real UR5e robot in real-time.
 """
-import sys
 import rospy
-import copy
 from math import pi
 from math import radians as d2r
 import numpy as np
