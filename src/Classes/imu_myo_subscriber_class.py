@@ -72,7 +72,7 @@ class IMUsubscriber:
         self.sub_imu_ls = rospy.Subscriber('/sensor_l_shoulder', Imu, self.cb_imu_ls)
         self.sub_imu_le = rospy.Subscriber('/sensor_l_elbow', Imu, self.cb_imu_le)
         self.sub_imu_rs = rospy.Subscriber('/sensor_r_shoulder', Imu, self.cb_imu_rs)
-        self.sub_imu_re = rospy.Subscriber('//myo_raw/myo_imu', Imu, self.cb_imu_myo)
+        self.sub_imu_re = rospy.Subscriber('/myo_raw/myo_imu', Imu, self.cb_imu_myo)
         self.log_start_time = rospy.get_time()
         self.runflag = True
         _ROSTIME_START = rospy.get_time()
@@ -134,7 +134,7 @@ class IMUsubscriber:
         self.rs_measurement = msg
         while self.calibration_flag < _CALIBRATION_TH:
             self.r_q_shoulder_init = kinematic.q_invert(self.rs_measurement.orientation)
-            print("imu calibrate")
+            # print("imu calibrate")
         self.r_q_shoulder = kinematic.q_multiply(self.r_q_shoulder_init, self.rs_measurement.orientation)
         self.rs_angles = q2e(kinematic.q_tf_convert(self.r_q_shoulder), axes='sxyz')
         self.acc_rs = self.rs_measurement.linear_acceleration

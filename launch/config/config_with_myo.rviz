@@ -4,9 +4,11 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
+        - /Global Options1
         - /RobotModel1
         - /RobotModel1/Status1
-      Splitter Ratio: 0.5
+        - /RobotModel1/Links1
+      Splitter Ratio: 0.5973333120346069
     Tree Height: 744
   - Class: rviz/Selection
     Name: Selection
@@ -317,7 +319,7 @@ Visualization Manager:
   Global Options:
     Background Color: 48; 48; 48
     Default Light: true
-    Fixed Frame: myo_raw
+    Fixed Frame: base_link
     Frame Rate: 30
   Name: root
   Tools:
@@ -341,7 +343,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 2.345075845718384
+      Distance: 2.7358756065368652
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -349,17 +351,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0
-        Y: 0
-        Z: 0
+        X: -0.8394370675086975
+        Y: -0.5842588543891907
+        Z: 1.0242222547531128
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.19479838013648987
+      Pitch: 0.43979841470718384
       Target Frame: <Fixed Frame>
-      Yaw: 0.4854021966457367
+      Yaw: 4.638585090637207
     Saved: ~
 Window Geometry:
   Displays:
