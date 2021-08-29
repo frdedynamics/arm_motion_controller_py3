@@ -5,7 +5,7 @@ import rospy
 import tf_conversions
 
 import tf2_ros
-from geometry_msgs.msg import TransformStamped, PoseStamped
+from geometry_msgs.msg import TransformStamped, PoseStamped, Quaternion
 
 
 def handle_myo_pose(msg):
@@ -16,7 +16,7 @@ def handle_myo_pose(msg):
     t.header.frame_id = "world"
     t.child_frame_id = "myo_raw"
     t.transform.translation = msg.pose.position
-    t.transform.rotation = msg.pose.orientation
+    t.transform.rotation = Quaternion(0.0, 0.0, 0.707, 0.707)
 
     br.sendTransform(t)
 
