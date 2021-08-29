@@ -134,6 +134,7 @@ class IMUsubscriber:
         self.rs_measurement = msg
         while self.calibration_flag < _CALIBRATION_TH:
             self.r_q_shoulder_init = kinematic.q_invert(self.rs_measurement.orientation)
+            print("imu calibrate")
         self.r_q_shoulder = kinematic.q_multiply(self.r_q_shoulder_init, self.rs_measurement.orientation)
         self.rs_angles = q2e(kinematic.q_tf_convert(self.r_q_shoulder), axes='sxyz')
         self.acc_rs = self.rs_measurement.linear_acceleration
@@ -150,12 +151,13 @@ class IMUsubscriber:
         self.re_measurement = msg
         while self.calibration_flag < _CALIBRATION_TH:
             self.r_q_elbow_init = kinematic.q_invert(self.re_measurement.orientation)
+            print("myo calibrate")
         self.r_q_elbow = kinematic.q_multiply(self.r_q_elbow_init, self.re_measurement.orientation)
         r_q_elbow_sensorframe = kinematic.q_multiply(kinematic.q_invert(self.r_q_shoulder), self.r_q_elbow)
         self.re_angles = q2e(kinematic.q_tf_convert(r_q_elbow_sensorframe), axes='sxyz')
         self.acc_re = self.re_measurement.linear_acceleration
         self.gyro_re = self.re_measurement.angular_velocity
         # Update joint angles
-        self.human_joint_imu.position[12] = self.re_angles[2]  # pitch
-        self.human_joint_imu.position[14] = - self.re_angles[0]  # yaw
-        # self.human_joint_imu.position[11] = self.re_angles[2]  # roll
+        self.human_joint_imu.position[12] = -self.re_angles[0] # elbow bend 
+        # self.human_joint_imu.position[14] = - self.re_angles[2]  # elbow roll
+        # self.human_joint_imu.position[11] = self.re_angles[2]  
