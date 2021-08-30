@@ -59,6 +59,7 @@ class RobotCommander:
 
 		self.hand_init_orientation = Quaternion()
 		self.human_to_robot_init_orientation = Quaternion(0.0, 0.0, 0.707, 0.707)
+		# This human-robot init orientation should not be static. TODO: make it based on chest orientation.
 
 		self.s = s
 		self.k = k
@@ -68,12 +69,14 @@ class RobotCommander:
 		self.joint_flag = False
 
 		self.state = "IDLE"
-		self.role = "HUMAN_LEADING"  # of "ROBOT_LEADING"
+		self.role = "HUMAN_LEADING"  # or "ROBOT_LEADING"
 		self.hrc_status = String()
                
 
 	def init_subscribers_and_publishers(self):
 		self.sub_hand_grip_strength = rospy.Subscriber('/robotiq_grip_gap', Int16, self.cb_hand_grip_strength)
+		self.sub_motion_hand_pose = rospy.Subscriber('/motion_hand_pose', Pose, self.cb_motion_hand_pose)
+		self.sub_steering_pose = rospy.Subscriber('/steering_hand_pose', Pose, self.cb_steering_pose)
 		self.sub_hand_pose = rospy.Subscriber('/hand_pose', Pose, self.cb_hand_pose)
 		self.sub_steering_pose = rospy.Subscriber('/steering_pose', Pose, self.cb_steering_pose)
 		self.sub_human_ori = rospy.Subscriber('/human_ori', Quaternion, self.cb_human_ori)
@@ -94,7 +97,7 @@ class RobotCommander:
 		self.hand_grip_strength = msg
 
 
-	def cb_hand_pose(self, msg):
+	def cb_motion_hand_pose(self, msg):
 		""" Subscribes left hand pose """
 		self.motion_hand_pose = msg
 		if not self.init_flag:
@@ -109,8 +112,8 @@ class RobotCommander:
 
 
 	def cartesian_control_2_arms(self):	
-		self.target_pose.position.x = self.motion_hand_pose.position.x + self.s * self.steering_hand_pose.position.x
-		self.target_pose.position.y = self.motion_hand_pose.position.y - self.s * self.steering_hand_pose.position.y
+		self.target_pose.position.x = (- self.motion_hand_pose.position.x) - self.s * self.steering_hand_pose.position.x
+		self.target_pose.position.y = (- self.motion_hand_pose.position.y) - self.s * self.steering_hand_pose.position.y
 		self.target_pose.position.z = self.motion_hand_pose.position.z + self.s * self.steering_hand_pose.position.z
 		self.target_pose.orientation = self.motion_hand_pose.orientation
 

@@ -38,8 +38,8 @@ def cb_r_wrist(msg):
 
 
 if __name__ == '__main__':
-    pub_hand_pose = rospy.Publisher('/hand_pose', Pose, queue_size=10)
-    pub_steering_pose = rospy.Publisher('/steering_pose', Pose, queue_size=10)
+    pub_motion_hand_pose = rospy.Publisher('/motion_hand_pose', Pose, queue_size=10)
+    pub_steering_pose = rospy.Publisher('/steering_hand_pose', Pose, queue_size=10)
     sub_l_wrist = rospy.Subscriber('/wrist_left', Pose, cb_l_wrist)
     sub_r_wrist = rospy.Subscriber('/wrist_right', Pose, cb_r_wrist)
     rospy.init_node('wrist_to_robot_2arms')
@@ -72,7 +72,7 @@ if __name__ == '__main__':
         tf_left_pose = DHmatrices.htm_to_pose(tf_left)
         tf_right_pose = DHmatrices.htm_to_pose(tf_right)
         # hand_pose = DHmatrices.htm_to_pose(np.matmul(ur5e_init_htm, tf_left))
-        pub_hand_pose.publish(tf_left_pose)
+        pub_motion_hand_pose.publish(tf_left_pose)
         pub_steering_pose.publish(tf_right_pose)
         # print "tf_left:", tf_left_pose
             
@@ -95,7 +95,7 @@ if __name__ == '__main__':
     #             tf_left = np.matmul(np.linalg.inv(left_htm_init), DHmatrices.pose_to_htm(wrist_left_pose))
     #             tf_left_pose = DHmatrices.htm_to_pose(tf_left)
     #             # hand_pose = DHmatrices.htm_to_pose(np.matmul(ur5e_init_htm, tf_left))
-    #             pub_hand_pose.publish(tf_left_pose)
+    #             pub_motion_hand_pose.publish(tf_left_pose)
     #             # print "tf_left:", tf_left_pose
             
     #     rate.sleep()
