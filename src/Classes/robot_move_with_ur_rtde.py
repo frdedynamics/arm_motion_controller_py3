@@ -3,6 +3,7 @@
 """
 Subscribes two hand poses and drives the real UR5e robot in real-time.
 """
+import sys
 import rospy
 from math import pi
 from math import radians as d2r
@@ -33,12 +34,16 @@ class RobotCommander:
 
 
 		self.robot_init = self.rtde_r.getActualTCPPose()
-		self.release_approach = self.robot_init ## TODO
-		self.release = self.robot_init ## TODO
+		self.robot_init_joints = self.rtde_r.getActualQ()
+		self.release_approach_joints = [d2r(-175.82), d2r(-44.7), d2r(85.04), d2r(-36.80), d2r(19.64), d2r(-96.58)]
+		self.release_joints = [d2r(-156.66), d2r(-33.67), d2r(62.73), d2r(-27.07), d2r(38.72), d2r(-94.81)]
+		self.home_approach_joints = [d2r(-175.82), d2r(-58.56), d2r(73.26), d2r(-11.08), d2r(19.57), d2r(-96.67)]
 
 		print("============ Arm current pose: ", self.robot_init)
-		# print "click Enter to continue"
-		# dummy_input = raw_input()
+		# self.rtde_c.moveJ(self.release_joints)
+		# print("click Enter to continue")
+		# dummy_input = input()
+		# sys.exit()
 
 		self.home = self.robot_init
 		self.target_pose = Pose()
@@ -46,7 +51,6 @@ class RobotCommander:
 		self.hand_grip_strength = Int16()
 		self.steering_hand_pose = Pose()
 		self.robot_pose = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-		self.robot_joint_angles = self.rtde_r.getActualQ()
 
 		self.robot_colift_init = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 		self.target_pose_colift_init = Pose()
@@ -74,7 +78,7 @@ class RobotCommander:
 		self.sub_steering_pose = rospy.Subscriber('/steering_pose', Pose, self.cb_steering_pose)
 		self.pub_tee_goal = rospy.Publisher('/Tee_goal_pose', Pose, queue_size=1)
 		self.pub_hrc_status = rospy.Publisher('/hrc_status', String, queue_size=1)
-		self.pub_grip_cmd = rospy.Publisher('/cmd_grip', Bool, queue_size=1)
+		self.pub_grip_cmd = rospy.Publisher('/cmd_grip_bool', Bool, queue_size=1)
 
 
 	def cb_hand_grip_strength(self, msg):
@@ -131,27 +135,6 @@ class RobotCommander:
 		self.robot_pose[3:] = self.robot_init[3:]
 
 
-	@staticmethod
-	def jointcomp(joints_list1, joints_list2):
-		j1 = np.array(joints_list1)
-		j2 = np.array([joints_list2[2], joints_list2[1], joints_list2[0], joints_list2[3], joints_list2[4], joints_list2[5]])
-		# absolute(a - b) <= (atol + rtol * absolute(b))
-		diff = ((j1[0]-j2[0])+(j1[1]-j2[1])+(j1[2]-j2[2])+(j1[3]-j2[3])+(j1[4]-j2[4])+(j1[5]-j2[5]))
-		# return np.allclose(j1, j2, rtol=1e-03, atol=1e-04)
-		return diff
-
-	
-	def robot_move_predef_pose(self, goal):
-		result = False
-		if not result:
-			self.pub_tee_goal.publish(goal)
-			rospy.sleep(0.5)
-			print(self.robot_joint_angles, "current joints")
-			print(goal.position, "goal joints")
-			result = RobotCommander.jointcomp(self.robot_joint_angles, goal.position)
-			print("result", result)
-		return result
-
 	def update(self):
 		global robot_colift_init
 		# Palm up: active, palm dowm: idle
@@ -206,17 +189,17 @@ class RobotCommander:
 
 		else:
 			## RELEASE (or PLACE)
-			# user_input = raw_input("Move to RELEASE pose?")
-			# if user_input == 'y':
-			print("Move to RELEASE pose?")
-			reach_dist = 10
-			while abs(reach_dist)> 0.001:
-				reach_dist = self.robot_move_predef_pose(self.release)
-				print("moving to release. dist:", reach_dist)
-			cmd_release = Bool()
-			cmd_release = True
-			self.pub_grip_cmd.publish(cmd_release)
-			print("Robot at RELEASE")
+			user_input = input("Move to RELEASE pose?")
+			if user_input == 'y':
+				print("Moving to RELEASE pose")
+				self.rtde_c.servoStop()
+				self.rtde_c.moveJ(self.release_joints)
+				cmd_release = Bool()
+				cmd_release = True
+				self.pub_grip_cmd.publish(cmd_release)
+				print("Robot at RELEASE")
+			else:
+				sys.exit("Release undemanded")
 			# Gripper_release()
 			# else:
 			# 	sys.exit("unknown user input")
@@ -225,9 +208,7 @@ class RobotCommander:
 			rospy.sleep(4)  # Wait until the gripper is fully open
 			# user_input = raw_input("Move to RELEASE APPROACH pose?")
 			# if user_input == 'y':
-			reach_dist = 10
-			while abs(reach_dist)> 0.001:
-				reach_dist = self.robot_move_predef_pose(self.release_approach)
+			self.rtde_c.moveJ(self.release_approach_joints)
 			print("Robot at release approach")
 			# else:
 			# 	sys.exit("unknown user input")
@@ -238,25 +219,13 @@ class RobotCommander:
 			print("Please move arms such that role:HUMAN_LEADING and state:IDLE")
 			user_input = input("Ready to new cycle?")
 			if user_input == 'y':
-				reach_dist = 10
-				while abs(reach_dist)> 0.001:
-					reach_dist = self.robot_move_predef_pose(self.robot_init)
-					print("moving to release. dist:", reach_dist)
+				self.rtde_c.moveJ(self.home_approach_joints)
+				self.rtde_c.moveJ(self.robot_init_joints)
 				# rospy.sleep(5)
 				self.role = "HUMAN_LEADING"
 				self.state = "IDLE"
 		
 		print("state:", self.state, "    role:", self.role)
-		# print self.robot_joint_angles.position, "current joints"
-		# print self.openrave_joint_angles.position, "openrave joints"
-		# if self.joint_flag:
-		# 	result = RobotCommander.jointcomp(self.robot_joint_angles.position, self.openrave_joint_angles.position)
-		# 	print "HERE", result
 		self.hrc_status = self.state + ',' + self.role
 		self.pub_hrc_status.publish(self.hrc_status)
 		self.r.sleep()
-		
-		# if(self.steering_hand_pose.orientation.w < 0.707 and self.steering_hand_pose.orientation.x > 0.707): # Clutch deactive
-		# 	self.pub_tee_goal.publish(self.robot_pose)
-
-

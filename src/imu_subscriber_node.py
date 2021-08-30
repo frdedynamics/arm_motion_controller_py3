@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 import rospy
-# from Classes.imu_subscriber_class import IMUsubscriber
-from Classes.imu_myo_subscriber_class import IMUsubscriber
+from Classes.imu_subscriber_class import IMUsubscriber
+# from Classes.imu_myo_subscriber_class import IMUsubscriber
 from geometry_msgs.msg import Vector3
 
 if __name__ == "__main__": 
