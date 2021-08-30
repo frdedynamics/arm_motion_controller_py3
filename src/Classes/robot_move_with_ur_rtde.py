@@ -76,9 +76,15 @@ class RobotCommander:
 		self.sub_hand_grip_strength = rospy.Subscriber('/robotiq_grip_gap', Int16, self.cb_hand_grip_strength)
 		self.sub_hand_pose = rospy.Subscriber('/hand_pose', Pose, self.cb_hand_pose)
 		self.sub_steering_pose = rospy.Subscriber('/steering_pose', Pose, self.cb_steering_pose)
+		self.sub_human_ori = rospy.Subscriber('/human_ori', Quaternion, self.cb_human_ori)
 		self.pub_tee_goal = rospy.Publisher('/Tee_goal_pose', Pose, queue_size=1)
 		self.pub_hrc_status = rospy.Publisher('/hrc_status', String, queue_size=1)
 		self.pub_grip_cmd = rospy.Publisher('/cmd_grip_bool', Bool, queue_size=1)
+
+
+	def cb_human_ori(self, msg):
+		""" Subscribes chest IMU orientation to map human w.r.t the world frame """
+		self.human_to_robot_init_orientation = kinematic.q_multiply(Quaternion(0.0, 0.0, 0.707, 0.707), msg)
 
 
 	def cb_hand_grip_strength(self, msg):
@@ -189,17 +195,17 @@ class RobotCommander:
 
 		else:
 			## RELEASE (or PLACE)
-			user_input = input("Move to RELEASE pose?")
-			if user_input == 'y':
-				print("Moving to RELEASE pose")
-				self.rtde_c.servoStop()
-				self.rtde_c.moveJ(self.release_joints)
-				cmd_release = Bool()
-				cmd_release = True
-				self.pub_grip_cmd.publish(cmd_release)
-				print("Robot at RELEASE")
-			else:
-				sys.exit("Release undemanded")
+			# user_input = input("Move to RELEASE pose?")
+			# if user_input == 'y':
+			print("Moving to RELEASE pose")
+			self.rtde_c.servoStop()
+			self.rtde_c.moveJ(self.release_joints)
+			cmd_release = Bool()
+			cmd_release = False
+			self.pub_grip_cmd.publish(cmd_release)
+			print("Robot at RELEASE")
+			# else:
+			# 	sys.exit("Release undemanded")
 			# Gripper_release()
 			# else:
 			# 	sys.exit("unknown user input")

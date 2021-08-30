@@ -38,7 +38,7 @@ class IMUsubscriber:
         self.r_q_shoulder_init = Quaternion(0, 0, 0, 1.0)
         self.r_q_elbow_init = Quaternion(0, 0, 0, 1.0)
 
-        self.q_chest = Quaternion(0, 0, 0, 1.0)
+        self.q_chest = Quaternion(0.0, 0.0, 0.707, 0.707)
         self.l_q_shoulder = Quaternion(0, 0, 0, 1.0)
         self.l_q_elbow = Quaternion(0, 0, 0, 1.0)
         self.r_q_shoulder = Quaternion(0, 0, 0, 1.0)
@@ -68,6 +68,7 @@ class IMUsubscriber:
 
     def init_subscribers_and_publishers(self):
         self.pub = rospy.Publisher('/joint_states_human', JointState, queue_size=1)
+        self.pub_human_ori = rospy.Publisher('/human_ori', Quaternion, queue_size=1)
         self.sub_imu_c = rospy.Subscriber('/sensor_r_wrist', Imu, self.cb_imu_chest)
         self.sub_imu_ls = rospy.Subscriber('/sensor_l_shoulder', Imu, self.cb_imu_ls)
         self.sub_imu_le = rospy.Subscriber('/sensor_l_elbow', Imu, self.cb_imu_le)
@@ -83,6 +84,7 @@ class IMUsubscriber:
         self.human_joint_imu.header.stamp = rospy.Time.now()
         self.calibration_flag = self.calibration_flag + 1
         self.pub.publish(self.human_joint_imu)
+        self.pub_human_ori.publish(self.q_chest)
 
 
     def cb_imu_chest(self, msg):
