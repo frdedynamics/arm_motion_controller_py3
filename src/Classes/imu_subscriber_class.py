@@ -152,9 +152,9 @@ class IMUsubscriber:
         self.acc_lw = self.lw_measurement.linear_acceleration
         self.gyro_lw = self.lw_measurement.angular_velocity
         # Update joint angles
-        self.human_joint_imu.position[15] = self.lw_angles[0]  # pitch
-        self.human_joint_imu.position[16] = self.lw_angles[1]  # yaw
-        self.human_joint_imu.position[17] = self.lw_angles[2]  # roll
+        self.human_joint_imu.position[15] = -self.lw_angles[1]  # pitch
+        self.human_joint_imu.position[16] = self.lw_angles[2]  # yaw
+        self.human_joint_imu.position[17] = self.lw_angles[0]  # roll
         self.motion_wrist_ori.x = self.lw_angles[0]
         self.motion_wrist_ori.y = self.lw_angles[1]
         self.motion_wrist_ori.z = self.lw_angles[2]
