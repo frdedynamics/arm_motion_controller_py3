@@ -6,7 +6,7 @@ Node runner for /Classes/robot_move_with_ur_rtde.py
 """
 
 import rospy
-from Classes.robot_move_with_ur_rtde import RobotCommander
+from Classes.robot_move_with_ur_rtde_with_TO import RobotCommander
 from math import pi
 
 

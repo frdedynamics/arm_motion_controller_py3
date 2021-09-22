@@ -12,7 +12,7 @@
   </node>
 
   <!-- Show in Rviz   -->
-  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find arm_motion_controller_py3)/launch/config/config.rviz"/> 
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find arm_motion_controller_py3)/launch/config/config_axes.rviz"/> 
 
   <!-- publish joint state
   <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
