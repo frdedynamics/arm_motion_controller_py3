@@ -12,6 +12,7 @@ import numpy as np
 from geometry_msgs.msg import Pose, Point, Quaternion, Vector3
 from sensor_msgs.msg import JointState
 from std_msgs.msg import String, Int16, Float64, Bool
+from std_msgs.msg import Float32MultiArray
 
 from . import Kinematics_with_Quaternions as kinematic
 
@@ -20,7 +21,7 @@ import rtde_receive
 
 
 class RobotCommander:
-	def __init__(self, rate=125, start_node=False, s=1.0, k=1.0):
+	def __init__(self, rate=100, start_node=False, s=1.0, k=1.0):
 		"""Initializes the robot commander
 			@params s: motion hand - steering hand scale
 			@params k: target hand pose - robot pose scale"""
@@ -34,7 +35,9 @@ class RobotCommander:
 
 
 		self.robot_init = self.rtde_r.getActualTCPPose()
+		self.robot_current_TCP = Float32MultiArray()
 		self.robot_init_joints = self.rtde_r.getActualQ()
+		self.release_prev_joints = [d2r(-156.66), d2r(-40.38), d2r(58.48), d2r(-16.06), d2r(38.70), d2r(-94.83)]
 		self.release_approach_joints = [d2r(-175.82), d2r(-44.7), d2r(85.04), d2r(-36.80), d2r(19.64), d2r(-96.58)]
 		self.release_joints = [d2r(-156.66), d2r(-33.67), d2r(62.73), d2r(-27.07), d2r(38.72), d2r(-94.81)]
 		self.home_approach_joints = [d2r(-175.82), d2r(-58.56), d2r(73.26), d2r(-11.08), d2r(19.57), d2r(-96.67)]
@@ -81,6 +84,7 @@ class RobotCommander:
 		self.pub_tee_goal = rospy.Publisher('/Tee_goal_pose', Pose, queue_size=1)
 		self.pub_hrc_status = rospy.Publisher('/hrc_status', String, queue_size=1)
 		self.pub_grip_cmd = rospy.Publisher('/cmd_grip_bool', Bool, queue_size=1)
+		self.pub_robot_current_TCP = rospy.Publisher('/robot_current_TCP', Float32MultiArray, queue_size=10)
 
 
 	def cb_human_ori(self, msg):
@@ -131,10 +135,10 @@ class RobotCommander:
 		self.motion_hand_colift_pos_ch.x = self.motion_hand_pose.position.x - self.motion_hand_colift_init.position.x
 		self.motion_hand_colift_pos_ch.y = self.motion_hand_pose.position.y - self.motion_hand_colift_init.position.y
 		self.motion_hand_colift_pos_ch.z = self.motion_hand_pose.position.z - self.motion_hand_colift_init.position.z
+		print(self.motion_hand_colift_pos_ch)
 
 		corrected_motion_hand_pose = kinematic.q_rotate(self.human_to_robot_init_orientation, self.motion_hand_colift_pos_ch)
 		
-
 		self.robot_pose[0] = self.robot_colift_init[0] + self.k * corrected_motion_hand_pose[0]
 		self.robot_pose[1] = self.robot_colift_init[1] - self.k * corrected_motion_hand_pose[1]
 		self.robot_pose[2] = self.robot_colift_init[2] + self.k * corrected_motion_hand_pose[2]
@@ -147,8 +151,8 @@ class RobotCommander:
 		# Palm up: active, palm dowm: idle
 		if not self.role == "ROBOT_LEADING":
 			if(self.state == "CO-LIFT"):
-				print("steering_hand_pose.position.x and steering_hand_pose.position.z", self.steering_hand_pose.position.x, self.steering_hand_pose.position.z)
-				if(self.steering_hand_pose.position.x < -0.3 and self.steering_hand_pose.position.z < -0.2):
+				print(self.steering_hand_pose.position.x, self.steering_hand_pose.position.z)
+				if(self.steering_hand_pose.position.x < -0.25 and self.steering_hand_pose.position.z < -0.15):
 					self.state = "RELEASE"
 				else:
 					if(self.steering_hand_pose.orientation.w > 0.707 and self.steering_hand_pose.orientation.x < 0.707):
@@ -182,7 +186,7 @@ class RobotCommander:
 						
 					robot_pose_pose = Pose(Point(self.robot_pose[0], self.robot_pose[1], self.robot_pose[2]), Quaternion())
 					self.pub_tee_goal.publish(robot_pose_pose)
-					self.rtde_c.servoL(self.robot_pose, 0.5, 0.3, 0.001, 0.1, 300)
+					self.rtde_c.servoL(self.robot_pose, 0.5, 0.3, 0.002, 0.1, 300)
 				
 				elif(self.state == "IDLE"):
 					pass
@@ -200,6 +204,7 @@ class RobotCommander:
 			# if user_input == 'y':
 			print("Moving to RELEASE pose")
 			self.rtde_c.servoStop()
+			self.rtde_c.moveJ(self.release_prev_joints)
 			self.rtde_c.moveJ(self.release_joints)
 			cmd_release = Bool()
 			cmd_release = False
@@ -235,4 +240,6 @@ class RobotCommander:
 		print("state:", self.state, "    role:", self.role)
 		self.hrc_status = self.state + ',' + self.role
 		self.pub_hrc_status.publish(self.hrc_status)
+		self.robot_current_TCP.data = self.rtde_r.getActualTCPPose()
+		self.pub_robot_current_TCP.publish(self.robot_current_TCP)
 		self.r.sleep()
