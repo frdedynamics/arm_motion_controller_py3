@@ -2,6 +2,7 @@
 
 """
 Subscribes 5 IMUS (LS, LE, RS, RE, RW(chest)). Publishes joint angles 5x2
+Updated: 6 IMUS (LW) added.
 
 """
 
@@ -35,32 +36,38 @@ class IMUsubscriber:
         self.q_chest_init = Quaternion(0, 0, 0, 1.0)
         self.l_q_shoulder_init = Quaternion(0, 0, 0, 1.0)
         self.l_q_elbow_init = Quaternion(0, 0, 0, 1.0)
+        self.l_q_wrist_init = Quaternion(0, 0, 0, 1.0)
         self.r_q_shoulder_init = Quaternion(0, 0, 0, 1.0)
         self.r_q_elbow_init = Quaternion(0, 0, 0, 1.0)
 
         self.q_chest = Quaternion(0.0, 0.0, 0.707, 0.707)
         self.l_q_shoulder = Quaternion(0, 0, 0, 1.0)
         self.l_q_elbow = Quaternion(0, 0, 0, 1.0)
+        self.l_q_wrist = Quaternion(0, 0, 0, 1.0)
         self.r_q_shoulder = Quaternion(0, 0, 0, 1.0)
         self.r_q_elbow = Quaternion(0, 0, 0, 1.0)
 
         self.acc_chest = Vector3()
         self.acc_ls = Vector3()
         self.acc_le = Vector3()
+        self.acc_lw = Vector3()
         self.acc_rs = Vector3()
         self.acc_re = Vector3()
 
         self.gyro_chest = Vector3()
         self.gyro_ls = Vector3()
         self.gyro_le = Vector3()
+        self.gyro_lw = Vector3()
         self.gyro_rs = Vector3()
         self.gyro_re = Vector3()
 
         self.human_joint_imu = JointState()
         self.human_joint_imu.name = [ 'spine_0', 'spine_1', 'spine_2',
                                       'left_shoulder_0', 'left_shoulder_1', 'left_shoulder_2', 'left_elbow_0', 'left_elbow_1', 'left_elbow_2',
-                                      'right_shoulder_0', 'right_shoulder_1', 'right_shoulder_2', 'right_elbow_0', 'right_elbow_1', 'right_elbow_2']
-        self.human_joint_imu.position = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+                                      'right_shoulder_0', 'right_shoulder_1', 'right_shoulder_2', 'right_elbow_0', 'right_elbow_1', 'right_elbow_2',
+                                      'left_wrist_0', 'left_wrist_1', 'left_wrist_2']
+        self.human_joint_imu.position = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        self.motion_wrist_ori = Vector3()
         self.calibration_flag = 0
         self.runflag = False
         print("Created")
@@ -68,10 +75,12 @@ class IMUsubscriber:
 
     def init_subscribers_and_publishers(self):
         self.pub = rospy.Publisher('/joint_states_human', JointState, queue_size=1)
+        self.pub_lw_ori = rospy.Publisher('/lw_ori', Vector3, queue_size=1)
         self.pub_human_ori = rospy.Publisher('/human_ori', Quaternion, queue_size=1)
         self.sub_imu_c = rospy.Subscriber('/sensor_r_wrist', Imu, self.cb_imu_chest)
         self.sub_imu_ls = rospy.Subscriber('/sensor_l_shoulder', Imu, self.cb_imu_ls)
         self.sub_imu_le = rospy.Subscriber('/sensor_l_elbow', Imu, self.cb_imu_le)
+        self.sub_imu_lw = rospy.Subscriber('/sensor_l_wrist', Imu, self.cb_imu_lw)
         self.sub_imu_rs = rospy.Subscriber('/sensor_r_shoulder', Imu, self.cb_imu_rs)
         self.sub_imu_re = rospy.Subscriber('/sensor_r_elbow', Imu, self.cb_imu_re)
         self.log_start_time = rospy.get_time()
@@ -85,6 +94,7 @@ class IMUsubscriber:
         self.calibration_flag = self.calibration_flag + 1
         self.pub.publish(self.human_joint_imu)
         self.pub_human_ori.publish(self.q_chest)
+        self.pub_lw_ori.publish(self.motion_wrist_ori)
 
 
     def cb_imu_chest(self, msg):
@@ -130,6 +140,24 @@ class IMUsubscriber:
         self.human_joint_imu.position[6] = -self.le_angles[2]  
         self.human_joint_imu.position[8] = self.le_angles[0]  
         # self.human_joint_imu.position[5] = self.le_angles[2]  
+    
+    def cb_imu_lw(self, msg):
+        self.lw_measurement = msg
+        while self.calibration_flag < _CALIBRATION_TH:
+            self.l_q_wrist_init = kinematic.q_invert(self.lw_measurement.orientation)
+            # print "calibrating elbow"
+        self.l_q_wrist = kinematic.q_multiply(self.l_q_wrist_init, self.lw_measurement.orientation)
+        l_q_wrist_sensorframe = kinematic.q_multiply(kinematic.q_invert(self.l_q_elbow), self.l_q_wrist)
+        self.lw_angles = q2e(kinematic.q_tf_convert(l_q_wrist_sensorframe), axes='sxyz')
+        self.acc_lw = self.lw_measurement.linear_acceleration
+        self.gyro_lw = self.lw_measurement.angular_velocity
+        # Update joint angles
+        self.human_joint_imu.position[15] = -self.lw_angles[1]  # pitch
+        self.human_joint_imu.position[16] = self.lw_angles[2]  # yaw
+        self.human_joint_imu.position[17] = self.lw_angles[0]  # roll
+        self.motion_wrist_ori.x = self.lw_angles[0]
+        self.motion_wrist_ori.y = self.lw_angles[1]
+        self.motion_wrist_ori.z = self.lw_angles[2]
 
     
     def cb_imu_rs(self, msg):
