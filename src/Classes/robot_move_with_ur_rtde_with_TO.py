@@ -13,13 +13,11 @@ from geometry_msgs.msg import Pose, Point, Quaternion, Vector3
 from sensor_msgs.msg import JointState
 from std_msgs.msg import String, Int16, Float64, Bool
 from std_msgs.msg import Float32MultiArray
-import tf.transformations as tf
 
 from . import Kinematics_with_Quaternions as kinematic
 
 from rtde_control import RTDEControlInterface as RTDEControl
 import rtde_receive
-import transformations as tf
 
 
 class RobotCommander:
@@ -36,10 +34,8 @@ class RobotCommander:
 			print("robot_move_with_ur_rtde Node Created")
 
 
-		self.robot_init = self.rtde_r.getActualTCPPose()
-		print(self.robot_init[3:])
-		ori_init = tf.quaternion_from_euler(self.robot_init[3], self.robot_init[4], self.robot_init[5])
-		self.robot_init_orientation = Quaternion(ori_init[1], ori_init[2], ori_init[3], ori_init[0])
+		# self.robot_init = self.rtde_r.getActualTCPPose()
+		self.robot_init = [-0.082, 0.732, 0.183, 2.472, 2.598, 2.180]
 		self.robot_current_TCP = Float32MultiArray()
 		self.robot_init_joints = self.rtde_r.getActualQ()
 		self.release_prev_joints = [d2r(-156.66), d2r(-40.38), d2r(58.48), d2r(-16.06), d2r(38.70), d2r(-94.83)]
@@ -79,6 +75,10 @@ class RobotCommander:
 		self.state = "IDLE"
 		self.role = "HUMAN_LEADING"  # or "ROBOT_LEADING"
 		self.hrc_status = String()
+
+		self.wrist_calib_flag = False
+		self.tcp_ori = Vector3()
+		self.tcp_ori_init = Vector3()
                
 
 	def init_subscribers_and_publishers(self):
@@ -86,11 +86,22 @@ class RobotCommander:
 		self.sub_motion_hand_pose = rospy.Subscriber('/motion_hand_pose', Pose, self.cb_motion_hand_pose)
 		self.sub_steering_pose = rospy.Subscriber('/steering_hand_pose', Pose, self.cb_steering_pose)
 		self.sub_human_ori = rospy.Subscriber('/human_ori', Quaternion, self.cb_human_ori)
+		self.sub_sensor_lw = rospy.Subscriber('/sensor_l_wrist_rpy', Vector3, self.cb_sensor_lw)
 		self.pub_tee_goal = rospy.Publisher('/Tee_goal_pose', Pose, queue_size=1)
 		self.pub_hrc_status = rospy.Publisher('/hrc_status', String, queue_size=1)
 		self.pub_grip_cmd = rospy.Publisher('/cmd_grip_bool', Bool, queue_size=1)
 		self.pub_robot_current_TCP = rospy.Publisher('/robot_current_TCP', Float32MultiArray, queue_size=10)
-		rospy.set_param('hrc_state', 'IDLE')
+
+	def cb_sensor_lw(self, msg):
+		""" Subscribes the pure IMU RPY topic to control robot TCP orientation"""
+		if not self.wrist_calib_flag:
+			self.tcp_ori_init.x = msg.x
+			self.tcp_ori_init.y = msg.y
+			self.tcp_ori_init.z = msg.z
+			self.wrist_calib_flag = True
+		self.tcp_ori.x = d2r(msg.y-self.tcp_ori_init.y)
+		self.tcp_ori.z = 0
+		self.tcp_ori.y = 0  ## This didn't give good results
 
 
 	def cb_human_ori(self, msg):
@@ -118,24 +129,39 @@ class RobotCommander:
 		""" Subscribes right hand pose """
 		self.steering_hand_pose = msg
 
-	def teleop_two_arms(self):
+	def right_arm_move_left_arm_ori(self):	
 		self.target_pose.position.x = - self.s * self.steering_hand_pose.position.x
 		self.target_pose.position.y = - self.s * self.steering_hand_pose.position.y
 		self.target_pose.position.z = self.s * self.steering_hand_pose.position.z
 
 		corrected_target_pose = kinematic.q_rotate(self.human_to_robot_init_orientation, self.target_pose.position)
-
 		self.robot_pose[0] = self.robot_init[0] + self.k * corrected_target_pose[0]
 		self.robot_pose[1] = self.robot_init[1] - self.k * corrected_target_pose[1]
 		self.robot_pose[2] = self.robot_init[2] + self.k * corrected_target_pose[2]
-
-		self.robot_pose_orientation = kinematic.q_multiply(self.robot_init_orientation, kinematic.q_multiply(self.hand_init_orientation, self.motion_hand_pose.orientation))
-		# self.robot_pose[3:] = tf.euler_from_quaternion([self.robot_pose_orientation.w, self.robot_pose_orientation.x, self.robot_pose_orientation.y, self.robot_pose_orientation.z], axes='sxyz')
+		# self.robot_pose.orientation = kinematic.q_multiply(self.robot_init.orientation, kinematic.q_multiply(self.hand_init_orientation, self.motion_hand_pose.orientation))
 		self.robot_pose[3:] = self.robot_init[3:]
 
-		self.steering_hand_colift_init = self.steering_hand_pose
+		self.motion_hand_colift_init = self.motion_hand_pose
 
-	def colift(self):
+
+	def cartesian_control_2_arms(self):	
+		self.target_pose.position.x = (- self.motion_hand_pose.position.x) - self.s * self.steering_hand_pose.position.x
+		self.target_pose.position.y = (- self.motion_hand_pose.position.y) - self.s * self.steering_hand_pose.position.y
+		self.target_pose.position.z = self.motion_hand_pose.position.z + self.s * self.steering_hand_pose.position.z
+		self.target_pose.orientation = self.motion_hand_pose.orientation
+
+		# print "robot_pose:", self.robot_pose.position
+		corrected_target_pose = kinematic.q_rotate(self.human_to_robot_init_orientation, self.target_pose.position)
+		self.robot_pose[0] = self.robot_init[0] + self.k * corrected_target_pose[0]
+		self.robot_pose[1] = self.robot_init[1] - self.k * corrected_target_pose[1]
+		self.robot_pose[2] = self.robot_init[2] + self.k * corrected_target_pose[2]
+		# self.robot_pose.orientation = kinematic.q_multiply(self.robot_init.orientation, kinematic.q_multiply(self.hand_init_orientation, self.motion_hand_pose.orientation))
+		self.robot_pose[3:] = self.robot_init[3:]
+
+		self.motion_hand_colift_init = self.motion_hand_pose
+
+
+	def cartesian_control_1_arm(self):	
 		self.motion_hand_colift_pos_ch.x = self.motion_hand_pose.position.x - self.motion_hand_colift_init.position.x
 		self.motion_hand_colift_pos_ch.y = self.motion_hand_pose.position.y - self.motion_hand_colift_init.position.y
 		self.motion_hand_colift_pos_ch.z = self.motion_hand_pose.position.z - self.motion_hand_colift_init.position.z
@@ -146,8 +172,16 @@ class RobotCommander:
 		self.robot_pose[0] = self.robot_colift_init[0] + self.k * corrected_motion_hand_pose[0]
 		self.robot_pose[1] = self.robot_colift_init[1] - self.k * corrected_motion_hand_pose[1]
 		self.robot_pose[2] = self.robot_colift_init[2] + self.k * corrected_motion_hand_pose[2]
+		# self.robot_pose.orientation = kinematic.q_multiply(self.robot_init.orientation, kinematic.q_multiply(self.hand_init_orientation, self.motion_hand_pose.orientation))
 		self.robot_pose[3:] = self.robot_init[3:]
 
+	def update2(self, x):
+		try:
+			# self.rtde_c.servoL([self.robot_init[0], self.robot_init[1], self.robot_init[2], self.robot_init[3]+self.tcp_ori.x, self.robot_init[4]+self.tcp_ori.y, self.robot_init[5]+self.tcp_ori.z], 0.5, 0.3, 0.002, 0.1, 300)
+			self.rtde_c.servoL([self.robot_init[0], self.robot_init[1], self.robot_init[2], self.robot_init[3], self.robot_init[4], self.robot_init[5]+x], 0.5, 0.3, 0.002, 0.1, 300)
+		except KeyboardInterrupt:
+			self.rtde_c.stopScript()
+			raise
 
 
 	def update(self):
@@ -155,19 +189,23 @@ class RobotCommander:
 		# Palm up: active, palm dowm: idle
 		if not self.role == "ROBOT_LEADING":
 			if(self.state == "CO-LIFT"):
-				if(rospy.get_param('hrc_state') == 'RELEASE'):
+				print(self.steering_hand_pose.position.x, self.steering_hand_pose.position.z)
+				if(self.steering_hand_pose.position.x < -0.25 and self.steering_hand_pose.position.z < -0.15):
 					self.state = "RELEASE"
 				else:
-					if(self.steering_hand_pose.orientation.w < 0.707 and self.steering_hand_pose.orientation.x < 0.707):
+					if(self.steering_hand_pose.orientation.w > 0.707 and self.steering_hand_pose.orientation.x < 0.707):
 						self.state = "IDLE"
 					else:
 						self.state == "CO-LIFT"
 						if not self.colift_flag:
 							self.robot_colift_init = self.rtde_r.getActualTCPPose()
 							self.colift_flag = True
-			elif(self.steering_hand_pose.orientation.w < 0.707 and self.steering_hand_pose.orientation.x > 0.707):
-				self.state = "IDLE"
 			elif(self.steering_hand_pose.orientation.w > 0.707 and self.steering_hand_pose.orientation.x < 0.707):
+				self.state = "IDLE"
+				# if steering arm vertically downwords when it is in IDLE
+				# if(self.steering_hand_pose.position.x < -0.3 and self.steering_hand_pose.position.z < -0.4):
+				# 	self.state = "RELEASE"
+			elif(self.steering_hand_pose.orientation.w < 0.707 and self.steering_hand_pose.orientation.x > 0.707):
 				if not (self.state == "CO-LIFT"):
 					self.state = "APPROACH"
 
@@ -176,17 +214,19 @@ class RobotCommander:
 					# check grip here
 					# print "motion:", self.motion_hand_pose.position, "hands:", self.target_pose.position
 					print("self.hand_grip_strength.data:", self.hand_grip_strength.data)
-					if(rospy.get_param('hrc_state') == 'COLIFT'):
+					if(self.hand_grip_strength.data > 75):
 						self.state = "CO-LIFT"
-						self.colift()  # one hand free
+						self.cartesian_control_1_arm()  # one hand free
 						# do something extra? Change axes? Maybe robot take over from here?
 						# No way to leave CO-LIFT state unless hand releases
 					else:
-						self.teleop_two_arms()
+						self.right_arm_move_left_arm_ori()
 						
 					robot_pose_pose = Pose(Point(self.robot_pose[0], self.robot_pose[1], self.robot_pose[2]), Quaternion())
 					self.pub_tee_goal.publish(robot_pose_pose)
-					self.rtde_c.servoL(self.robot_pose, 0.5, 0.3, 0.002, 0.1, 300)
+					self.robot_init[5] = self.robot_init[5]+self.tcp_ori.x
+					ur_cmd = [self.robot_pose[0], self.robot_pose[1], self.robot_pose[2], self.robot_init[3]+self.tcp_ori.x, self.robot_init[4]+self.tcp_ori.y, self.robot_init[5]+self.tcp_ori.z]
+					self.rtde_c.servoL(ur_cmd, 0.5, 0.3, 0.002, 0.1, 300)
 				
 				elif(self.state == "IDLE"):
 					pass
@@ -200,6 +240,8 @@ class RobotCommander:
 
 		else:
 			## RELEASE (or PLACE)
+			# user_input = input("Move to RELEASE pose?")
+			# if user_input == 'y':
 			print("Moving to RELEASE pose")
 			self.rtde_c.servoStop()
 			self.rtde_c.moveJ(self.release_prev_joints)
@@ -208,13 +250,24 @@ class RobotCommander:
 			cmd_release = False
 			self.pub_grip_cmd.publish(cmd_release)
 			print("Robot at RELEASE")
+			# else:
+			# 	sys.exit("Release undemanded")
+			# Gripper_release()
+			# else:
+			# 	sys.exit("unknown user input")
 
 			# ## RELEASE APPROACH
 			rospy.sleep(4)  # Wait until the gripper is fully open
+			# user_input = raw_input("Move to RELEASE APPROACH pose?")
+			# if user_input == 'y':
 			self.rtde_c.moveJ(self.release_approach_joints)
 			print("Robot at release approach")
+			# else:
+			# 	sys.exit("unknown user input")
 
 			## GO BACK HOME
+			# user_input = raw_input("Move to INIT/HOME pose?")
+			# if user_input == 'y':
 			print("Please move arms such that role:HUMAN_LEADING and state:IDLE")
 			user_input = input("Ready to new cycle?")
 			if user_input == 'y':
