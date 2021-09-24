@@ -35,7 +35,7 @@ class RobotCommander:
 
 
 		# self.robot_init = self.rtde_r.getActualTCPPose()
-		self.robot_init = [-0.082, 0.732, 0.183, 2.472, 2.598, 2.180]
+		self.robot_init = [-0.038, 0.734, 0.170, 2.621, 2.307, 1.170]
 		self.robot_current_TCP = Float32MultiArray()
 		self.robot_init_joints = self.rtde_r.getActualQ()
 		self.release_prev_joints = [d2r(-156.66), d2r(-40.38), d2r(58.48), d2r(-16.06), d2r(38.70), d2r(-94.83)]
@@ -139,7 +139,7 @@ class RobotCommander:
 		self.robot_pose[1] = self.robot_init[1] - self.k * corrected_target_pose[1]
 		self.robot_pose[2] = self.robot_init[2] + self.k * corrected_target_pose[2]
 		# self.robot_pose.orientation = kinematic.q_multiply(self.robot_init.orientation, kinematic.q_multiply(self.hand_init_orientation, self.motion_hand_pose.orientation))
-		self.robot_pose[3:] = self.robot_init[3:]
+		# self.robot_pose[3:] = self.robot_init[3:]
 
 		self.motion_hand_colift_init = self.motion_hand_pose
 
@@ -178,7 +178,11 @@ class RobotCommander:
 	def update2(self, x):
 		try:
 			# self.rtde_c.servoL([self.robot_init[0], self.robot_init[1], self.robot_init[2], self.robot_init[3]+self.tcp_ori.x, self.robot_init[4]+self.tcp_ori.y, self.robot_init[5]+self.tcp_ori.z], 0.5, 0.3, 0.002, 0.1, 300)
-			self.rtde_c.servoL([self.robot_init[0], self.robot_init[1], self.robot_init[2], self.robot_init[3], self.robot_init[4], self.robot_init[5]+x], 0.5, 0.3, 0.002, 0.1, 300)
+			self.right_arm_move_left_arm_ori()
+			print(self.robot_init[0]-self.robot_pose[0],
+				  self.robot_init[1]-self.robot_pose[1],
+				  self.robot_init[2]-self.robot_pose[2])
+			self.rtde_c.servoL([self.robot_pose[0], self.robot_pose[1], self.robot_pose[2], self.robot_init[3], self.robot_init[4], self.robot_init[5]+x], 0.5, 0.3, 0.002, 0.1, 300)
 		except KeyboardInterrupt:
 			self.rtde_c.stopScript()
 			raise

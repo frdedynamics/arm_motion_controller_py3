@@ -13,26 +13,11 @@ from math import pi
 def main(): 
 	Robot = RobotCommander(start_node=True)
 	Robot.init_subscribers_and_publishers()
-	x = numpy.arange(-0.707,0.707,0.005)
-	Robot.rtde_c.servoL([Robot.robot_init[0], Robot.robot_init[1], Robot.robot_init[2], Robot.robot_init[3], Robot.robot_init[4], Robot.robot_init[5]-0.707], 0.5, 0.3, 0.002, 0.1, 300)
-	count = 0
-	reverse = False
 	try:
 		while not rospy.is_shutdown():
 			# Robot.update()
-			if count == len(x)-1:
-				reverse = True
-			elif count == 0:
-				reverse = False
-			
-			if not reverse:
-				count += 1
-			else:
-				count-=1
-
-			print(count)
-			
-			Robot.update2(x[count])
+			print(Robot.tcp_ori)
+			Robot.update2(Robot.tcp_ori.x)
 			Robot.r.sleep()
 	except KeyboardInterrupt:
 		rospy.signal_shutdown("KeyboardInterrupt")
