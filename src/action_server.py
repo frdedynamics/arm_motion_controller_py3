@@ -3,12 +3,8 @@
 import rospy
 import actionlib
 from arm_motion_controller_py3.msg import handCalibrationAction, handCalibrationFeedback, handCalibrationResult
-from std_msgs.msg import Float32MultiArray
 
 import numpy as np
-
-left_hand_pose = Float32MultiArray()
-right_hand_pose = Float32MultiArray()
 
 
 class ActionServer():
@@ -27,17 +23,11 @@ class ActionServer():
         rate = rospy.Rate(1)
 
         if goal.calib_request:
-            left_hand_pose.data = 1.0
-            right_hand_pose.data = 2.0
+            left_hand_pose = [1.0, 2.0]
+            right_hand_pose = [2.0, 3.0]
             feedback.calib_success = calib_flag
-            result.left_hand_pose.append(left_hand_pose.data)
-            result.right_hand_pose.append(right_hand_pose.data)
-
-            left_hand_pose.data = 1.0
-            right_hand_pose.data = 2.0
-            feedback.calib_success = calib_flag
-            result.left_hand_pose.append(left_hand_pose.data)
-            result.right_hand_pose.append(right_hand_pose.data)
+            result.left_hand_pose = left_hand_pose
+            result.right_hand_pose = right_hand_pose
         else:
             feedback.calib_success = False # not calib_flag
         self.a_server.publish_feedback(feedback)
