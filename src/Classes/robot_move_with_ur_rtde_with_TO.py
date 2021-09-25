@@ -3,11 +3,15 @@
 """
 Subscribes two hand poses and drives the real UR5e robot in real-time.
 """
+from os import stat
 import sys
 import rospy
 from math import pi
 from math import radians as d2r
 import numpy as np
+
+import actionlib
+from arm_motion_controller_py3.msg import handCalibrationAction, handCalibrationGoal
 
 from geometry_msgs.msg import Pose, Point, Quaternion, Vector3
 from sensor_msgs.msg import JointState
@@ -21,12 +25,14 @@ import rtde_receive
 
 
 class RobotCommander:
-	def __init__(self, rate=100, start_node=False, s=1.0, k=1.0):
+	def __init__(self, rate=100, start_node=False, sr=1.0, sl=1.0, so=2.0):
 		"""Initializes the robot commander
 			@params s: motion hand - steering hand scale
 			@params k: target hand pose - robot pose scale"""
-		self.rtde_c = RTDEControl("172.31.1.144", RTDEControl.FLAG_USE_EXT_UR_CAP)
-		self.rtde_r = rtde_receive.RTDEReceiveInterface("172.31.1.144")
+		# self.rtde_c = RTDEControl("172.31.1.144", RTDEControl.FLAG_USE_EXT_UR_CAP)
+		# self.rtde_r = rtde_receive.RTDEReceiveInterface("172.31.1.144")
+		# self.rtde_c.moveL(self.home_teleop)
+		print("Fake controller created")
 
 		if start_node == True:
 			rospy.init_node("robot_move_with_ur_rtde")
@@ -44,16 +50,12 @@ class RobotCommander:
 		self.home_approach_joints = [d2r(-175.82), d2r(-58.56), d2r(73.26), d2r(-11.08), d2r(19.57), d2r(-96.67)]
 
 		print("============ Arm current pose: ", self.robot_init)
-		# self.rtde_c.moveJ(self.release_joints)
-		# print("click Enter to continue")
-		# dummy_input = input()
-		# sys.exit()
-
-		self.home = self.robot_init
+		self.home_teleop = self.robot_init
+		self.home_hrc = self.robot_init
 		self.target_pose = Pose()
-		self.motion_hand_pose = Pose()
+		self.left_hand_pose = Pose()
 		self.hand_grip_strength = Int16()
-		self.steering_hand_pose = Pose()
+		self.right_hand_pose = Pose()
 		self.robot_pose = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
 		self.robot_colift_init = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
@@ -63,14 +65,9 @@ class RobotCommander:
 
 		self.hand_init_orientation = Quaternion()
 		self.human_to_robot_init_orientation = Quaternion(0.0, 0.0, 0.707, 0.707)
-		# This human-robot init orientation should not be static. TODO: make it based on chest orientation.
-
-		self.s = s
-		self.k = k
-
-		self.init_flag = False
-		self.colift_flag = False
-		self.joint_flag = False
+		self.sr = sr # WS scaling right hand
+		self.sl = sl # WS scaling left hand 
+		self.so = so # Orientation scaling of left wrist to robot wrist
 
 		self.state = "IDLE"
 		self.role = "HUMAN_LEADING"  # or "ROBOT_LEADING"
@@ -83,14 +80,16 @@ class RobotCommander:
 
 	def init_subscribers_and_publishers(self):
 		self.sub_hand_grip_strength = rospy.Subscriber('/robotiq_grip_gap', Int16, self.cb_hand_grip_strength)
-		self.sub_motion_hand_pose = rospy.Subscriber('/motion_hand_pose', Pose, self.cb_motion_hand_pose)
-		self.sub_steering_pose = rospy.Subscriber('/steering_hand_pose', Pose, self.cb_steering_pose)
+		self.sub_left_hand_pose = rospy.Subscriber('/left_hand_pose', Pose, self.cb_left_hand_pose)
+		self.sub_right_hand_pose = rospy.Subscriber('/right_hand_pose', Pose, self.cb_right_hand_pose)
 		self.sub_human_ori = rospy.Subscriber('/human_ori', Quaternion, self.cb_human_ori)
 		self.sub_sensor_lw = rospy.Subscriber('/sensor_l_wrist_rpy', Vector3, self.cb_sensor_lw)
 		self.pub_tee_goal = rospy.Publisher('/Tee_goal_pose', Pose, queue_size=1)
 		self.pub_hrc_status = rospy.Publisher('/hrc_status', String, queue_size=1)
 		self.pub_grip_cmd = rospy.Publisher('/cmd_grip_bool', Bool, queue_size=1)
-		self.pub_robot_current_TCP = rospy.Publisher('/robot_current_TCP', Float32MultiArray, queue_size=10)
+
+
+	####### Callback methods #######
 
 	def cb_sensor_lw(self, msg):
 		""" Subscribes the pure IMU RPY topic to control robot TCP orientation"""
@@ -115,65 +114,156 @@ class RobotCommander:
 		Close: 255 """
 		self.hand_grip_strength = msg
 
-
-	def cb_motion_hand_pose(self, msg):
+	def cb_left_hand_pose(self, msg):
 		""" Subscribes left hand pose """
-		self.motion_hand_pose = msg
-		if not self.init_flag:
-			self.hand_init_orientation = kinematic.q_invert(self.steering_hand_pose.orientation)
-			print("Hand init set:", self.hand_init_orientation)
-			self.init_flag = True
-	
+		self.left_hand_pose = msg	
 
-	def cb_steering_pose(self, msg):
+	def cb_right_hand_pose(self, msg):
 		""" Subscribes right hand pose """
-		self.steering_hand_pose = msg
+		self.right_hand_pose = msg
 
-	def right_arm_move_left_arm_ori(self):	
-		self.target_pose.position.x = - self.s * self.steering_hand_pose.position.x
-		self.target_pose.position.y = - self.s * self.steering_hand_pose.position.y
-		self.target_pose.position.z = self.s * self.steering_hand_pose.position.z
+	def call_hand_calib_server(self):
+
+		self.client = actionlib.SimpleActionClient('hand_calibration_as', handCalibrationAction)
+
+		self.client.wait_for_server()
+
+		self.goal = handCalibrationGoal()
+		self.goal.calib_request = True
+
+		self.client.send_goal(self.goal, feedback_cb=self.hand_calib_feedback_cb)
+
+		self.client.wait_for_result()
+
+		result = self.client.get_result()
+
+		return result # maybe result is not needed?
+	
+	def hand_calib_feedback_cb(self, msg):
+		print('Hand poses initialized:', msg)
+
+
+	####### State methods #######
+
+	def teleop_idle(self):
+		self.robot_pose = self.home_teleop
+		self.rtde_c.moveJ_IK(self.robot_pose)
+		if (self.right_hand_pose.orientation.w < 0.707 and self.right_hand_pose.orientation.x > 0.707):
+			self.status = 'TO/active'
+		else:
+			self.status = 'TO/idle'
+		return self.status
+
+
+	def teleop_active(self):	
+		self.target_pose.position.x = - self.s * self.right_hand_pose.position.x
+		self.target_pose.position.y = - self.s * self.right_hand_pose.position.y
+		self.target_pose.position.z = self.s * self.right_hand_pose.position.z
 
 		corrected_target_pose = kinematic.q_rotate(self.human_to_robot_init_orientation, self.target_pose.position)
-		self.robot_pose[0] = self.robot_init[0] + self.k * corrected_target_pose[0]
-		self.robot_pose[1] = self.robot_init[1] - self.k * corrected_target_pose[1]
-		self.robot_pose[2] = self.robot_init[2] + self.k * corrected_target_pose[2]
-		# self.robot_pose.orientation = kinematic.q_multiply(self.robot_init.orientation, kinematic.q_multiply(self.hand_init_orientation, self.motion_hand_pose.orientation))
-		# self.robot_pose[3:] = self.robot_init[3:]
+		self.robot_pose[0] = self.home_teleop[0] + self.k * corrected_target_pose[0]
+		self.robot_pose[1] = self.home_teleop[1] - self.k * corrected_target_pose[1]
+		self.robot_pose[2] = self.home_teleop[2] + self.k * corrected_target_pose[2]
+		self.robot_pose[3] = self.home_teleop[3]
+		self.robot_pose[4] = self.home_teleop[4]
+		self.robot_pose[5] = self.home_teleop[5] + self.so*self.tcp_ori.x
 
-		self.motion_hand_colift_init = self.motion_hand_pose
+		if (self.right_hand_pose.orientation.w < 0.707 and self.right_hand_pose.orientation.x > 0.707): # right rotate upwards
+			self.status = 'TO/idle'
+		# TODO: check the tresholds
+		elif ((self.tcp_ori.x > 10.0) and (self.right_hand_pose.orientation.w > 0.707 and self.right_hand_pose.orientation.x < 0.707)):
+			self.status = 'HRC/idle'
+		else:
+			self.status = 'TO/active'
+
+		return self.status
 
 
-	def cartesian_control_2_arms(self):	
-		self.target_pose.position.x = (- self.motion_hand_pose.position.x) - self.s * self.steering_hand_pose.position.x
-		self.target_pose.position.y = (- self.motion_hand_pose.position.y) - self.s * self.steering_hand_pose.position.y
-		self.target_pose.position.z = self.motion_hand_pose.position.z + self.s * self.steering_hand_pose.position.z
-		self.target_pose.orientation = self.motion_hand_pose.orientation
+	def hrc_idle(self, from_colift=False):
+		if not from_colift:
+			self.robot_pose = self.home_hrc
+			self.rtde_c.moveJ_IK(self.robot_pose)  # or check with moveL
+		# TODO: check the tresholds
+		if((self.tcp_ori.x < 10.0) and (self.right_hand_pose.orientation.w < 0.707 and self.right_hand_pose.orientation.x > 0.707)):
+			self.rtde_c.moveL(self.home_teleop)
+			self.status = 'TO/active'
+		elif(self.right_hand_pose.orientation.w < 0.707 and self.right_hand_pose.orientation.x > 0.707):
+			# self.home_hrc_approach = self.rtde_r.getActualTCPPose()
+			left, right = self.call_hand_calib_server()
+			self.status = 'HRC/approach'
+		else:
+			self.status = 'HRC/idle'
+		return self.status
 
-		# print "robot_pose:", self.robot_pose.position
+	def hrc_approach(self):
+		''' old cartesian_2_arms here 
+		robot.init is updated to home_hrc'''
+		self.target_pose.position.x = (- self.left_hand_pose.position.x) - self.s * self.right_hand_pose.position.x
+		self.target_pose.position.y = (- self.left_hand_pose.position.y) - self.s * self.right_hand_pose.position.y
+		self.target_pose.position.z = self.left_hand_pose.position.z + self.s * self.right_hand_pose.position.z
+		self.target_pose.orientation = self.left_hand_pose.orientation
+
 		corrected_target_pose = kinematic.q_rotate(self.human_to_robot_init_orientation, self.target_pose.position)
-		self.robot_pose[0] = self.robot_init[0] + self.k * corrected_target_pose[0]
-		self.robot_pose[1] = self.robot_init[1] - self.k * corrected_target_pose[1]
-		self.robot_pose[2] = self.robot_init[2] + self.k * corrected_target_pose[2]
-		# self.robot_pose.orientation = kinematic.q_multiply(self.robot_init.orientation, kinematic.q_multiply(self.hand_init_orientation, self.motion_hand_pose.orientation))
-		self.robot_pose[3:] = self.robot_init[3:]
+		self.robot_pose[0] = self.home_hrc[0] + self.k * corrected_target_pose[0]
+		self.robot_pose[1] = self.home_hrc[1] - self.k * corrected_target_pose[1]
+		self.robot_pose[2] = self.home_hrc[2] + self.k * corrected_target_pose[2]
+		self.robot_pose[3:] = self.home_hrc[3:]
 
-		self.motion_hand_colift_init = self.motion_hand_pose
-
-
-	def cartesian_control_1_arm(self):	
-		self.motion_hand_colift_pos_ch.x = self.motion_hand_pose.position.x - self.motion_hand_colift_init.position.x
-		self.motion_hand_colift_pos_ch.y = self.motion_hand_pose.position.y - self.motion_hand_colift_init.position.y
-		self.motion_hand_colift_pos_ch.z = self.motion_hand_pose.position.z - self.motion_hand_colift_init.position.z
-		print(self.motion_hand_colift_pos_ch)
-
-		corrected_motion_hand_pose = kinematic.q_rotate(self.human_to_robot_init_orientation, self.motion_hand_colift_pos_ch)
+		if(self.right_hand_pose.orientation.w > 0.707 and self.right_hand_pose.orientation.x < 0.707):
+			self.status = 'HRC/idle'
 		
-		self.robot_pose[0] = self.robot_colift_init[0] + self.k * corrected_motion_hand_pose[0]
-		self.robot_pose[1] = self.robot_colift_init[1] - self.k * corrected_motion_hand_pose[1]
-		self.robot_pose[2] = self.robot_colift_init[2] + self.k * corrected_motion_hand_pose[2]
-		# self.robot_pose.orientation = kinematic.q_multiply(self.robot_init.orientation, kinematic.q_multiply(self.hand_init_orientation, self.motion_hand_pose.orientation))
-		self.robot_pose[3:] = self.robot_init[3:]
+		elif(self.hand_grip_strength.data > 75):
+			left, right = self.call_hand_calib_server()
+			self.robot_colift_init = self.rtde_r.getActualTCPPose()
+			self.status = 'HRC/colift'
+			
+		self.motion_hand_colift_init = self.left_hand_pose
+
+	def hrc_colift(self):
+		# TODO: any problem coming from IDLE but not from APPROACH?
+		''' Make force thingy here '''
+		vector = [0.0, 1.0, 0.0] # A pose vector that defines the force frame relative to the base frame.
+		selection_vector = [0.0, 1.0, 0.0, 0.0, 1.0, 0.0] # A 6d vector of 0s and 1s. 1 means that the robot will be compliant in the corresponding axis of the task frame
+		wrench = [0, 5, 0] # The forces/torques the robot will apply to its environment. The robot adjusts its position along/about compliant axis in order to achieve the specified force/torque. Values have no effect for non-compliant axes
+		type = 1 # An integer [1;3] specifying how the robot interprets the force frame. 1: The force frame is transformed in a way such that its y-axis is aligned with a vector pointing from the robot tcp towards the origin of the force frame. 2: The force frame is not transformed. 3: The force frame is transformed in a way such that its x-axis is the projection of the robot tcp velocity vector onto the x-y plane of the force frame.
+		limits = [1500, 1500, 1500, 0, 0, 0]# (Float) 6d vector. For compliant axes, these values are the maximum allowed tcp speed along/about the axis. For non-compliant axes, these values are the maximum allowed deviation along/about an axis between the actual tcp position and the one set by the program.
+		self.rtde_c.forceMode(vector, selection_vector, wrench, type)
+		lift_axis = 0
+
+		# TODO: fix this. won't work like that. Need proper data type
+		_zero_acc = [0.0, 0.0, 0.0]
+		_result = np.isclose(self.rtde_r.getActualToolAccelerometer(), _zero_acc)
+		if _result[lift_axis]:
+			# while in HRC/colift
+			while self.status == 'HRC/colift':
+				# get desired axis
+				left, right = self.call_hand_calib_server()
+				# TODO: check if x is the correct axis for the side motion
+				# TODO: check if 0.4 TH is enough or too much
+				if(self.left_hand_pose.position.x > 0.4):
+					vector = [1.0, 0.0, 0.0]
+				elif(self.left_hand_pose.position.x < -0.4):
+					vector = [-1.0, 0.0, 0.0]
+				else:
+					vector = [-1.0, 0.0, 0.0] # complient in all axes
+				# set force to that axis
+				self.rtde_c.forceMode(vector, selection_vector, wrench, type)
+				# check if still in colift
+				if(self.right_hand_pose.position.x < -0.25 and self.right_hand_pose.position.z < -0.15):
+					self.rtde_c.forceModeStop()
+					self.status = 'HRC/release'
+				elif(self.right_hand_pose.orientation.w > 0.707 and self.right_hand_pose.orientation.x < 0.707):
+					self.status = 'HRC/idle'	
+					self.hrc_idle(from_colift=True)
+				else:
+					self.status = 'HRC/colift'
+		# bool = self.rtde_c.isSteady()
+		# std::vector<double> = self.rtde_r.getActualToolAccelerometer()
+
+	def hrc_release(self):
+		self.status = 'HRC/colift'
+
+
 
 	def update2(self, x):
 		try:
@@ -193,30 +283,30 @@ class RobotCommander:
 		# Palm up: active, palm dowm: idle
 		if not self.role == "ROBOT_LEADING":
 			if(self.state == "CO-LIFT"):
-				print(self.steering_hand_pose.position.x, self.steering_hand_pose.position.z)
-				if(self.steering_hand_pose.position.x < -0.25 and self.steering_hand_pose.position.z < -0.15):
+				print(self.right_hand_pose.position.x, self.right_hand_pose.position.z)
+				if(self.right_hand_pose.position.x < -0.25 and self.right_hand_pose.position.z < -0.15):
 					self.state = "RELEASE"
 				else:
-					if(self.steering_hand_pose.orientation.w > 0.707 and self.steering_hand_pose.orientation.x < 0.707):
+					if(self.right_hand_pose.orientation.w > 0.707 and self.right_hand_pose.orientation.x < 0.707):
 						self.state = "IDLE"
 					else:
 						self.state == "CO-LIFT"
 						if not self.colift_flag:
 							self.robot_colift_init = self.rtde_r.getActualTCPPose()
 							self.colift_flag = True
-			elif(self.steering_hand_pose.orientation.w > 0.707 and self.steering_hand_pose.orientation.x < 0.707):
+			elif(self.right_hand_pose.orientation.w > 0.707 and self.right_hand_pose.orientation.x < 0.707):
 				self.state = "IDLE"
 				# if steering arm vertically downwords when it is in IDLE
-				# if(self.steering_hand_pose.position.x < -0.3 and self.steering_hand_pose.position.z < -0.4):
+				# if(self.right_hand_pose.position.x < -0.3 and self.right_hand_pose.position.z < -0.4):
 				# 	self.state = "RELEASE"
-			elif(self.steering_hand_pose.orientation.w < 0.707 and self.steering_hand_pose.orientation.x > 0.707):
+			elif(self.right_hand_pose.orientation.w < 0.707 and self.right_hand_pose.orientation.x > 0.707):
 				if not (self.state == "CO-LIFT"):
 					self.state = "APPROACH"
 
 			try:
 				if(self.state == "APPROACH" or self.state == "CO-LIFT"): # ACTIVE
 					# check grip here
-					# print "motion:", self.motion_hand_pose.position, "hands:", self.target_pose.position
+					# print "motion:", self.left_hand_pose.position, "hands:", self.target_pose.position
 					print("self.hand_grip_strength.data:", self.hand_grip_strength.data)
 					if(self.hand_grip_strength.data > 75):
 						self.state = "CO-LIFT"

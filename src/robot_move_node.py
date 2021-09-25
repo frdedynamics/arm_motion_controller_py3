@@ -15,9 +15,9 @@ def main():
 	Robot.init_subscribers_and_publishers()
 	try:
 		while not rospy.is_shutdown():
-			# Robot.update()
-			print(Robot.tcp_ori)
-			Robot.update2(Robot.tcp_ori.x)
+			Robot.update()
+			# print(Robot.tcp_ori)
+			# Robot.update2(2*Robot.tcp_ori.x)
 			Robot.r.sleep()
 	except KeyboardInterrupt:
 		rospy.signal_shutdown("KeyboardInterrupt")
