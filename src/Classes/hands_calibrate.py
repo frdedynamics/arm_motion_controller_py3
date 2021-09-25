@@ -3,13 +3,10 @@
 """
 Subscrives two wrist poses w.r.t chest. Send Tee goal w.r.t UR5e initial pose at home.
 
-UR5e init \base_link \tool0 TF at initial pose:
-- Translation: [-0.136, 0.490, 0.687]
-- Rotation: in Quaternion [-0.697, 0.005, 0.012, 0.717]
-            in RPY (radian) [-1.542, 0.024, 0.010]
-            in RPY (degree) [-88.374, 1.403, 0.549]
+This class is a newer version of wrist_tp_robot_2arms.py
+Action server is included because I need to initialize hand pose in Colift state.
 """
-import math, sys
+
 import numpy as np
 
 import rospy, actionlib
@@ -24,8 +21,6 @@ class HandCalibrate:
     def __init__(self):
         self.wrist_left_pose = Pose()
         self.wrist_right_pose = Pose()
-        # self.wrist_left_pose.position = Point(1,2,3)
-        # self.wrist_right_pose.position = Point(4,5,6)
         print("Initiated")
 
     def init_node(self, rate=100.0):
@@ -44,13 +39,13 @@ class HandCalibrate:
 
         
         print("Move to initial arm poses in 4 seconds...")
-        # rospy.sleep(1)
-        # print("3 seconds...")
-        # rospy.sleep(1)
-        # print("2 seconds...")
-        # rospy.sleep(1)
-        # print("1 second...")
-        # rospy.sleep(1)
+        rospy.sleep(1)
+        print("3 seconds...")
+        rospy.sleep(1)
+        print("2 seconds...")
+        rospy.sleep(1)
+        print("1 second...")
+        rospy.sleep(1)
 
         self.calc_inv()
 
