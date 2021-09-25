@@ -40,25 +40,24 @@ class RobotCommander:
 			print("robot_move_with_ur_rtde Node Created")
 
 
+		# TODO: Fill missing prefedined poses
 		# self.robot_init = self.rtde_r.getActualTCPPose()
-		self.robot_init = [-0.038, 0.734, 0.170, 2.621, 2.307, 1.170]
 		self.robot_current_TCP = Float32MultiArray()
-		self.robot_init_joints = self.rtde_r.getActualQ()
-		self.release_prev_joints = [d2r(-156.66), d2r(-40.38), d2r(58.48), d2r(-16.06), d2r(38.70), d2r(-94.83)]
-		self.release_approach_joints = [d2r(-175.82), d2r(-44.7), d2r(85.04), d2r(-36.80), d2r(19.64), d2r(-96.58)]
-		self.release_joints = [d2r(-156.66), d2r(-33.67), d2r(62.73), d2r(-27.07), d2r(38.72), d2r(-94.81)]
-		self.home_approach_joints = [d2r(-175.82), d2r(-58.56), d2r(73.26), d2r(-11.08), d2r(19.57), d2r(-96.67)]
+		self.release_before = []
+		self.release_after = []
+		self.release = []
+		self.home_teleop_approach = []
+		self.home_teleop = []
+		self.home_hrc = []
+		self.robot_colift_init = []
 
-		print("============ Arm current pose: ", self.robot_init)
-		self.home_teleop = self.robot_init
-		self.home_hrc = self.robot_init
+		# print("============ Arm current pose: ", self.rtde_r.getActualTCPPose())
 		self.target_pose = Pose()
 		self.left_hand_pose = Pose()
 		self.hand_grip_strength = Int16()
 		self.right_hand_pose = Pose()
 		self.robot_pose = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
-		self.robot_colift_init = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 		self.target_pose_colift_init = Pose()
 		self.motion_hand_colift_init = Pose()
 		self.motion_hand_colift_pos_ch = Point()
@@ -261,119 +260,57 @@ class RobotCommander:
 		# std::vector<double> = self.rtde_r.getActualToolAccelerometer()
 
 	def hrc_release(self):
-		self.status = 'HRC/colift'
+		print("Moving to RELEASE pose")
+		self.rtde_c.servoStop()
+		self.rtde_c.moveJ_IK(self.release_before)
+		self.rtde_c.moveJ(self.release)
+		cmd_release = Bool()
+		cmd_release = False
+		self.pub_grip_cmd.publish(cmd_release)
+		print("Robot at RELEASE")
+		rospy.sleep(4)  # Wait until the gripper is fully open
+		# user_input = raw_input("Move to RELEASE APPROACH pose?")
+		# if user_input == 'y':
+		self.rtde_c.moveJ_IK(self.release_after)
+		print("Robot at RELEASE APPROACH")
+
+		self.status = 'HRC/release'
 
 
 
 	def update2(self, x):
 		try:
 			# self.rtde_c.servoL([self.robot_init[0], self.robot_init[1], self.robot_init[2], self.robot_init[3]+self.tcp_ori.x, self.robot_init[4]+self.tcp_ori.y, self.robot_init[5]+self.tcp_ori.z], 0.5, 0.3, 0.002, 0.1, 300)
-			self.right_arm_move_left_arm_ori()
-			print(self.robot_init[0]-self.robot_pose[0],
-				  self.robot_init[1]-self.robot_pose[1],
-				  self.robot_init[2]-self.robot_pose[2])
-			self.rtde_c.servoL([self.robot_pose[0], self.robot_pose[1], self.robot_pose[2], self.robot_init[3], self.robot_init[4], self.robot_init[5]+x], 0.5, 0.3, 0.002, 0.1, 300)
+
+			# self.right_arm_move_left_arm_ori()
+			# print(self.robot_init[0]-self.robot_pose[0],
+			# 	  self.robot_init[1]-self.robot_pose[1],
+			# 	  self.robot_init[2]-self.robot_pose[2])
+			# self.rtde_c.servoL([self.robot_pose[0], self.robot_pose[1], self.robot_pose[2], self.robot_init[3], self.robot_init[4], self.robot_init[5]+x], 0.5, 0.3, 0.002, 0.1, 300)
+
+			return self.status
 		except KeyboardInterrupt:
 			self.rtde_c.stopScript()
 			raise
 
 
 	def update(self):
-		global robot_colift_init
-		# Palm up: active, palm dowm: idle
-		if not self.role == "ROBOT_LEADING":
-			if(self.state == "CO-LIFT"):
-				print(self.right_hand_pose.position.x, self.right_hand_pose.position.z)
-				if(self.right_hand_pose.position.x < -0.25 and self.right_hand_pose.position.z < -0.15):
-					self.state = "RELEASE"
-				else:
-					if(self.right_hand_pose.orientation.w > 0.707 and self.right_hand_pose.orientation.x < 0.707):
-						self.state = "IDLE"
-					else:
-						self.state == "CO-LIFT"
-						if not self.colift_flag:
-							self.robot_colift_init = self.rtde_r.getActualTCPPose()
-							self.colift_flag = True
-			elif(self.right_hand_pose.orientation.w > 0.707 and self.right_hand_pose.orientation.x < 0.707):
-				self.state = "IDLE"
-				# if steering arm vertically downwords when it is in IDLE
-				# if(self.right_hand_pose.position.x < -0.3 and self.right_hand_pose.position.z < -0.4):
-				# 	self.state = "RELEASE"
-			elif(self.right_hand_pose.orientation.w < 0.707 and self.right_hand_pose.orientation.x > 0.707):
-				if not (self.state == "CO-LIFT"):
-					self.state = "APPROACH"
+		# State machine here
+		pass
 
-			try:
-				if(self.state == "APPROACH" or self.state == "CO-LIFT"): # ACTIVE
-					# check grip here
-					# print "motion:", self.left_hand_pose.position, "hands:", self.target_pose.position
-					print("self.hand_grip_strength.data:", self.hand_grip_strength.data)
-					if(self.hand_grip_strength.data > 75):
-						self.state = "CO-LIFT"
-						self.cartesian_control_1_arm()  # one hand free
-						# do something extra? Change axes? Maybe robot take over from here?
-						# No way to leave CO-LIFT state unless hand releases
-					else:
-						self.right_arm_move_left_arm_ori()
-						
-					robot_pose_pose = Pose(Point(self.robot_pose[0], self.robot_pose[1], self.robot_pose[2]), Quaternion())
-					self.pub_tee_goal.publish(robot_pose_pose)
-					self.robot_init[5] = self.robot_init[5]+self.tcp_ori.x
-					ur_cmd = [self.robot_pose[0], self.robot_pose[1], self.robot_pose[2], self.robot_init[3]+self.tcp_ori.x, self.robot_init[4]+self.tcp_ori.y, self.robot_init[5]+self.tcp_ori.z]
-					self.rtde_c.servoL(ur_cmd, 0.5, 0.3, 0.002, 0.1, 300)
-				
-				elif(self.state == "IDLE"):
-					pass
-				elif(self.state == "RELEASE"):
-					self.role = "ROBOT_LEADING"
-				else:
-					raise AssertionError("Unknown collaboration state")
-
-			except AssertionError as e:
-				print(e)
-
-		else:
-			## RELEASE (or PLACE)
-			# user_input = input("Move to RELEASE pose?")
-			# if user_input == 'y':
-			print("Moving to RELEASE pose")
-			self.rtde_c.servoStop()
-			self.rtde_c.moveJ(self.release_prev_joints)
-			self.rtde_c.moveJ(self.release_joints)
-			cmd_release = Bool()
-			cmd_release = False
-			self.pub_grip_cmd.publish(cmd_release)
-			print("Robot at RELEASE")
-			# else:
-			# 	sys.exit("Release undemanded")
-			# Gripper_release()
-			# else:
-			# 	sys.exit("unknown user input")
-
-			# ## RELEASE APPROACH
-			rospy.sleep(4)  # Wait until the gripper is fully open
-			# user_input = raw_input("Move to RELEASE APPROACH pose?")
-			# if user_input == 'y':
-			self.rtde_c.moveJ(self.release_approach_joints)
-			print("Robot at release approach")
-			# else:
-			# 	sys.exit("unknown user input")
-
-			## GO BACK HOME
-			# user_input = raw_input("Move to INIT/HOME pose?")
-			# if user_input == 'y':
-			print("Please move arms such that role:HUMAN_LEADING and state:IDLE")
-			user_input = input("Ready to new cycle?")
-			if user_input == 'y':
-				self.rtde_c.moveJ(self.home_approach_joints)
-				self.rtde_c.moveJ(self.robot_init_joints)
-				# rospy.sleep(5)
-				self.role = "HUMAN_LEADING"
-				self.state = "IDLE"
-		
-		print("state:", self.state, "    role:", self.role)
-		self.hrc_status = self.state + ',' + self.role
+		# After the state machine
+		user_input = input("Ready to new cycle?")
+		if user_input == 'y':
+			self.rtde_c.moveJ_IK(self.home_teleop_approach)
+			self.rtde_c.moveJ(self.home_teleop)
+			self.role = "HUMAN_LEADING"
+			self.state = "IDLE"
+			self.status = 'teleop/idle'
+	
+		# print("state:", self.state, "    role:", self.role)
+		print("status:", self.status)
+		# self.hrc_status = self.state + ',' + self.role
+		self.hrc_status = self.status
 		self.pub_hrc_status.publish(self.hrc_status)
 		self.robot_current_TCP.data = self.rtde_r.getActualTCPPose()
 		self.pub_robot_current_TCP.publish(self.robot_current_TCP)
-		self.r.sleep()
