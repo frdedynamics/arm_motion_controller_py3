@@ -11,7 +11,7 @@ from math import pi
 
 def main(): 
 	Calibrator = HandCalibrate()
-	Calibrator.init_node(rate=10.0)
+	Calibrator.init_node(rate=100.0)
 	try:
 		while not rospy.is_shutdown():
 			Calibrator.update()

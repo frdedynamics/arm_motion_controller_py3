@@ -25,7 +25,7 @@ import rtde_receive
 
 
 class RobotCommander:
-	def __init__(self, rate=10, start_node=False, sr=1.0, sl=1.0, so=2.0):
+	def __init__(self, rate=100, start_node=False, sr=1.0, sl=1.0, so=2.0):
 		"""Initializes the robot commander
 			@params s: motion hand - steering hand scale
 			@params k: target hand pose - robot pose scale"""
@@ -44,6 +44,7 @@ class RobotCommander:
 		self.robot_current_TCP = Float32MultiArray()
 		self.home_teleop_approach = [-0.133, 0.686, 0.198, 2.381, -2.377, -0.418]
 		self.home_teleop = [-0.133, 0.686, 0.092, 2.381, -2.377, -0.418]
+		self.robot_init = [-0.133, 0.686, 0.092, 2.381, -2.377, -0.418]
 		self.home_hrc = [-0.133, 0.802, 0.124, 2.443, -2.435, -2.331]
 		self.release_before = [0.697, 0.630, 0.261, 2.159, -2.894, -2.240]
 		self.release = [0.697, 0.630, 0.092, 2.159, -2.894, -2.240]
@@ -148,46 +149,65 @@ class RobotCommander:
 	####### State methods #######
 
 	def teleop_idle(self):
-		self.robot_pose = self.home_teleop
-		self.rtde_c.moveL(self.robot_pose)
-		# if (self.right_hand_pose.orientation.w < 0.707 and self.right_hand_pose.orientation.x > 0.707):
-		# 	self.status = 'TO/active'
-		# else:
-		# 	self.status = 'TO/idle'
+		# self.robot_pose = self.home_teleop  # For some reason this updates home_teleop value
+		self.rtde_c.moveL(self.home_teleop)
+		if (self.right_hand_pose.orientation.w > 0.707 and self.right_hand_pose.orientation.x < 0.707):
+			self.status = 'TO/active'
+		else:
+			self.status = 'TO/idle'
 		return self.status
 
 
-	def teleop_active(self):	
+	def teleop_active(self):
 		self.target_pose.position.x = - self.sr * self.right_hand_pose.position.x
 		self.target_pose.position.y = - self.sr * self.right_hand_pose.position.y
 		self.target_pose.position.z = self.sr * self.right_hand_pose.position.z
 
 		corrected_target_pose = kinematic.q_rotate(self.human_to_robot_init_orientation, self.target_pose.position)
-		self.robot_pose[0] = self.home_teleop[0] + self.sl * corrected_target_pose[0]
-		self.robot_pose[1] = self.home_teleop[1] - self.sl * corrected_target_pose[1]
-		self.robot_pose[2] = self.home_teleop[2] + self.sl * corrected_target_pose[2]
-		self.robot_pose[3] = self.home_teleop[3]
-		self.robot_pose[4] = self.home_teleop[4]
-		self.robot_pose[5] = self.home_teleop[5] + self.so*self.tcp_ori.x
+		self.robot_pose[0] = self.robot_init[0] + self.sl * corrected_target_pose[0]
+		self.robot_pose[1] = self.robot_init[1] - self.sl * corrected_target_pose[1]
+		self.robot_pose[2] = self.robot_init[2] + self.sl * corrected_target_pose[2]
+		# self.robot_pose.orientation = kinematic.q_multiply(self.robot_init.orientation, kinematic.q_multiply(self.hand_init_orientation, self.motion_hand_pose.orientation))
+		# self.robot_pose[3:] = self.robot_init[3:]
 
-		if (self.right_hand_pose.orientation.w < 0.707 and self.right_hand_pose.orientation.x > 0.707): # right rotate upwards
-			self.status = 'TO/idle'
-		# TODO: check the tresholds
-		elif ((self.tcp_ori.x > 10.0) and (self.right_hand_pose.orientation.w > 0.707 and self.right_hand_pose.orientation.x < 0.707)):
-			self.status = 'HRC/idle'
-		else:
-			self.status = 'TO/active'
+		self.motion_hand_colift_init = self.right_hand_pose
 
-		return self.status
+
+		# self.target_pose.position.x = self.sr * self.right_hand_pose.position.x
+		# self.target_pose.position.y = - self.sr * self.right_hand_pose.position.y
+		# self.target_pose.position.z = self.sr * self.right_hand_pose.position.z
+
+		# corrected_target_pose = kinematic.q_rotate(self.human_to_robot_init_orientation, self.target_pose.position)
+		# self.robot_pose[0] = self.home_teleop[0] + corrected_target_pose[0]
+		# self.robot_pose[1] = self.home_teleop[1] + corrected_target_pose[1]
+		# self.robot_pose[2] = self.home_teleop[2] + corrected_target_pose[2]
+		# self.robot_pose[3] = self.home_teleop[3]- self.so*self.tcp_ori.x
+		# self.robot_pose[4] = self.home_teleop[4]
+		# self.robot_pose[5] = self.home_teleop[5] 
+
+		# self.rtde_c.servoL(self.robot_pose, 0.5, 0.3, 0.002, 0.1, 300)
+		# print(self.robot_pose)
+		# # self.rtde_c.moveL(self.home_teleop)
+
+		# if (self.right_hand_pose.orientation.w < 0.707 and self.right_hand_pose.orientation.x > 0.707): # right rotate upwards
+		# 	self.status = 'TO/idle'
+		# # TODO: check the tresholds
+		# elif ((self.tcp_ori.x > 10.0) and (self.right_hand_pose.orientation.w > 0.707 and self.right_hand_pose.orientation.x < 0.707)):
+		# 	self.status = 'HRC/idle'
+		# 	sys.exit()
+		# else:
+		# 	self.status = 'TO/active'
+
+		# return self.status
 
 
 	def hrc_idle(self, from_colift=False):
 		if not from_colift:
 			self.robot_pose = self.home_hrc
-			self.rtde_c.moveJ_IK(self.robot_pose)  # or check with moveL
+			# self.rtde_c.moveJ_IK(self.robot_pose)  # or check with moveL
 		# TODO: check the tresholds
 		if((self.tcp_ori.x < 10.0) and (self.right_hand_pose.orientation.w < 0.707 and self.right_hand_pose.orientation.x > 0.707)):
-			self.rtde_c.moveL(self.home_teleop)
+			# self.rtde_c.moveL(self.home_teleop)
 			self.status = 'TO/active'
 		elif(self.right_hand_pose.orientation.w < 0.707 and self.right_hand_pose.orientation.x > 0.707):
 			# self.home_hrc_approach = self.rtde_r.getActualTCPPose()
@@ -200,16 +220,18 @@ class RobotCommander:
 	def hrc_approach(self):
 		''' old cartesian_2_arms here 
 		robot.init is updated to home_hrc'''
-		self.target_pose.position.x = (- self.left_hand_pose.position.x) - self.s * self.right_hand_pose.position.x
-		self.target_pose.position.y = (- self.left_hand_pose.position.y) - self.s * self.right_hand_pose.position.y
-		self.target_pose.position.z = self.left_hand_pose.position.z + self.s * self.right_hand_pose.position.z
+		self.target_pose.position.x = (- self.left_hand_pose.position.x) - self.sr * self.right_hand_pose.position.x
+		self.target_pose.position.y = (- self.left_hand_pose.position.y) - self.sr * self.right_hand_pose.position.y
+		self.target_pose.position.z = self.left_hand_pose.position.z + self.sr * self.right_hand_pose.position.z
 		self.target_pose.orientation = self.left_hand_pose.orientation
 
 		corrected_target_pose = kinematic.q_rotate(self.human_to_robot_init_orientation, self.target_pose.position)
-		self.robot_pose[0] = self.home_hrc[0] + self.k * corrected_target_pose[0]
-		self.robot_pose[1] = self.home_hrc[1] - self.k * corrected_target_pose[1]
-		self.robot_pose[2] = self.home_hrc[2] + self.k * corrected_target_pose[2]
+		self.robot_pose[0] = self.home_hrc[0] + self.sl * corrected_target_pose[0]
+		self.robot_pose[1] = self.home_hrc[1] - self.sl * corrected_target_pose[1]
+		self.robot_pose[2] = self.home_hrc[2] + self.sl * corrected_target_pose[2]
 		self.robot_pose[3:] = self.home_hrc[3:]
+
+		self.rtde_c.servoL(self.robot_pose,0.5, 0.3, 0.002, 0.1, 300)
 
 		if(self.right_hand_pose.orientation.w > 0.707 and self.right_hand_pose.orientation.x < 0.707):
 			self.status = 'HRC/idle'
@@ -285,24 +307,20 @@ class RobotCommander:
 		self.pub_grip_cmd.publish(cmd_release)
 		print("Robot at RELEASE")
 		rospy.sleep(4)  # Wait until the gripper is fully open
-		self.rtde_c.moveJ_IK(self.release_after)
+		self.rtde_c.moveL(self.release_after)
 		print("Robot at RELEASE APPROACH")
 
 		self.status = 'HRC/release'
 
 
 
-	def update2(self):
+	def update2(self,x):
 		try:
-			# self.rtde_c.servoL([self.robot_init[0], self.robot_init[1], self.robot_init[2], self.robot_init[3]+self.tcp_ori.x, self.robot_init[4]+self.tcp_ori.y, self.robot_init[5]+self.tcp_ori.z], 0.5, 0.3, 0.002, 0.1, 300)
-
-			# self.right_arm_move_left_arm_ori()
-			# print(self.robot_init[0]-self.robot_pose[0],
-			# 	  self.robot_init[1]-self.robot_pose[1],
-			# 	  self.robot_init[2]-self.robot_pose[2])
-			# self.rtde_c.servoL([self.robot_pose[0], self.robot_pose[1], self.robot_pose[2], self.robot_init[3], self.robot_init[4], self.robot_init[5]+x], 0.5, 0.3, 0.002, 0.1, 300)
-			self.status == 'HRC/colift'
-			self.hrc_colift()
+			self.teleop_active()
+			print(self.robot_init[0]-self.robot_pose[0],
+				  self.robot_init[1]-self.robot_pose[1],
+				  self.robot_init[2]-self.robot_pose[2])
+			self.rtde_c.servoL([self.robot_pose[0], self.robot_pose[1], self.robot_pose[2], self.robot_init[3], self.robot_init[4], self.robot_init[5]+x], 0.5, 0.3, 0.01, 0.1, 300)	
 
 			return self.status
 		except KeyboardInterrupt:
@@ -327,8 +345,8 @@ class RobotCommander:
 			self.hrc_release()
 			user_input = input("Ready to new cycle?")
 			if user_input == 'y':
-				self.rtde_c.moveJ_IK(self.home_teleop_approach)
-				self.rtde_c.moveJ(self.home_teleop)
+				# self.rtde_c.moveJ_IK(self.home_teleop_approach)
+				# self.rtde_c.moveJ(self.home_teleop)
 				self.status = 'TO/idle'
 			else:
 				self.status = 'IDLE'
