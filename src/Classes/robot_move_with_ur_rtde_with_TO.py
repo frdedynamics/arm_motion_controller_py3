@@ -83,7 +83,8 @@ class RobotCommander:
 		self.sub_right_hand_pose = rospy.Subscriber('/right_hand_pose', Pose, self.cb_right_hand_pose)
 		self.sub_human_ori = rospy.Subscriber('/human_ori', Quaternion, self.cb_human_ori)
 		self.sub_sensor_lw = rospy.Subscriber('/sensor_l_wrist_rpy', Vector3, self.cb_sensor_lw)
-		self.pub_tee_goal = rospy.Publisher('/Tee_goal_pose', Pose, queue_size=1)
+		self.pub_tcp_goal = rospy.Publisher('/Tcp_goal_pose', Pose, queue_size=1)
+		self.pub_tcp_actual = rospy.Publisher('/Tcp_actual', Float32MultiArray, queue_size=1)
 		self.pub_hrc_status = rospy.Publisher('/hrc_status', String, queue_size=1)
 		self.pub_grip_cmd = rospy.Publisher('/cmd_grip_bool', Bool, queue_size=1)
 
@@ -252,14 +253,17 @@ class RobotCommander:
 					self.rtde_c.forceModeStop()
 					self.status = 'HRC/release'
 				elif(self.right_hand_pose.orientation.w > 0.707 and self.right_hand_pose.orientation.x < 0.707):
+					self.rtde_c.forceModeStop()
 					self.status = 'HRC/idle'	
 					self.hrc_idle(from_colift=True)
 				else:
 					self.status = 'HRC/colift'
+		self.robot_pose = self.rtde_c.getTargetWaypoint()
 		# bool = self.rtde_c.isSteady()
 		# std::vector<double> = self.rtde_r.getActualToolAccelerometer()
 
 	def hrc_release(self):
+		self.robot_pose = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # there is no target pose any longer
 		print("Moving to RELEASE pose")
 		self.rtde_c.servoStop()
 		self.rtde_c.moveJ_IK(self.release_before)
@@ -269,8 +273,6 @@ class RobotCommander:
 		self.pub_grip_cmd.publish(cmd_release)
 		print("Robot at RELEASE")
 		rospy.sleep(4)  # Wait until the gripper is fully open
-		# user_input = raw_input("Move to RELEASE APPROACH pose?")
-		# if user_input == 'y':
 		self.rtde_c.moveJ_IK(self.release_after)
 		print("Robot at RELEASE APPROACH")
 
@@ -296,21 +298,39 @@ class RobotCommander:
 
 	def update(self):
 		# State machine here
-		pass
-
-		# After the state machine
-		user_input = input("Ready to new cycle?")
-		if user_input == 'y':
-			self.rtde_c.moveJ_IK(self.home_teleop_approach)
-			self.rtde_c.moveJ(self.home_teleop)
-			self.role = "HUMAN_LEADING"
-			self.state = "IDLE"
-			self.status = 'teleop/idle'
+		status = self.status
+		if status == 'TO/idle':
+			self.teleop_idle()
+		elif status == 'TO/active':
+			self.teleop_active()
+		elif status == 'HRC/idle':
+			self.hrc_idle()
+		elif status == 'HRC/approach':
+			self.hrc_approach()
+		elif status == 'HRC/colift':
+			self.hrc_colift()
+		elif status == 'HRC/release':
+			self.hrc_release()
+			user_input = input("Ready to new cycle?")
+			if user_input == 'y':
+				self.rtde_c.moveJ_IK(self.home_teleop_approach)
+				self.rtde_c.moveJ(self.home_teleop)
+				self.status = 'TO/idle'
+			else:
+				self.status = 'IDLE'
+		elif status == 'IDLE':
+			print("System is in halt, please restart all the nodes for calibration")
+			sys.exit()
+		else:
+			print("Unknown state:", status)
+			sys.exit()
 	
 		# print("state:", self.state, "    role:", self.role)
-		print("status:", self.status)
+		print("status:", status)
 		# self.hrc_status = self.state + ',' + self.role
-		self.hrc_status = self.status
-		self.pub_hrc_status.publish(self.hrc_status)
+		# self.hrc_status = self.status
+		self.pub_hrc_status.publish(status)
 		self.robot_current_TCP.data = self.rtde_r.getActualTCPPose()
-		self.pub_robot_current_TCP.publish(self.robot_current_TCP)
+		self.pub_tcp_actual.publish(self.robot_current_TCP)
+		robot_pose_pose = kinematic.list_to_pose(self.robot_pose)
+		self.pub_tcp_goal.publish(robot_pose_pose)
