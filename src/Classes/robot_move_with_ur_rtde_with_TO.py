@@ -25,14 +25,13 @@ import rtde_receive
 
 
 class RobotCommander:
-	def __init__(self, rate=100, start_node=False, sr=1.0, sl=1.0, so=2.0):
+	def __init__(self, rate=10, start_node=False, sr=1.0, sl=1.0, so=2.0):
 		"""Initializes the robot commander
 			@params s: motion hand - steering hand scale
 			@params k: target hand pose - robot pose scale"""
-		# self.rtde_c = RTDEControl("172.31.1.144", RTDEControl.FLAG_USE_EXT_UR_CAP)
-		# self.rtde_r = rtde_receive.RTDEReceiveInterface("172.31.1.144")
+		self.rtde_c = RTDEControl("172.31.1.144", RTDEControl.FLAG_USE_EXT_UR_CAP)
+		self.rtde_r = rtde_receive.RTDEReceiveInterface("172.31.1.144")
 		# self.rtde_c.moveL(self.home_teleop)
-		print("Fake controller created")
 
 		if start_node == True:
 			rospy.init_node("robot_move_with_ur_rtde")
@@ -71,6 +70,7 @@ class RobotCommander:
 		self.state = "IDLE"
 		self.role = "HUMAN_LEADING"  # or "ROBOT_LEADING"
 		self.hrc_status = String()
+		self.status = 'HRC/colift'
 
 		self.wrist_calib_flag = False
 		self.tcp_ori = Vector3()
@@ -222,43 +222,49 @@ class RobotCommander:
 	def hrc_colift(self):
 		# TODO: any problem coming from IDLE but not from APPROACH?
 		''' Make force thingy here '''
-		vector = [0.0, 1.0, 0.0] # A pose vector that defines the force frame relative to the base frame.
-		selection_vector = [0.0, 1.0, 0.0, 0.0, 1.0, 0.0] # A 6d vector of 0s and 1s. 1 means that the robot will be compliant in the corresponding axis of the task frame
-		wrench = [0, 5, 0] # The forces/torques the robot will apply to its environment. The robot adjusts its position along/about compliant axis in order to achieve the specified force/torque. Values have no effect for non-compliant axes
-		type = 1 # An integer [1;3] specifying how the robot interprets the force frame. 1: The force frame is transformed in a way such that its y-axis is aligned with a vector pointing from the robot tcp towards the origin of the force frame. 2: The force frame is not transformed. 3: The force frame is transformed in a way such that its x-axis is the projection of the robot tcp velocity vector onto the x-y plane of the force frame.
-		limits = [1500, 1500, 1500, 0, 0, 0]# (Float) 6d vector. For compliant axes, these values are the maximum allowed tcp speed along/about the axis. For non-compliant axes, these values are the maximum allowed deviation along/about an axis between the actual tcp position and the one set by the program.
-		self.rtde_c.forceMode(vector, selection_vector, wrench, type)
+		vector_full = self.rtde_r.getActualTCPPose()
+		vector = vector_full # A pose vector that defines the force frame relative to the base frame.
+		selection_vector = [1, 0, 0, 0, 0, 0] # A 6d vector of 0s and 1s. 1 means that the robot will be compliant in the corresponding axis of the task frame
+		wrench = [10.0, 0.0, 0.0, 0.0, 0.0, 0.0] # The forces/torques the robot will apply to its environment. The robot adjusts its position along/about compliant axis in order to achieve the specified force/torque. Values have no effect for non-compliant axes
+		type = 2 # An integer [1;3] specifying how the robot interprets the force frame. 1: The force frame is transformed in a way such that its y-axis is aligned with a vector pointing from the robot tcp towards the origin of the force frame. 2: The force frame is not transformed. 3: The force frame is transformed in a way such that its x-axis is the projection of the robot tcp velocity vector onto the x-y plane of the force frame.
+		limits = [0.5, 0.1, 0.1, 0.17, 0.17, 0.17]# (Float) 6d vector. For compliant axes, these values are the maximum allowed tcp speed along/about the axis. For non-compliant axes, these values are the maximum allowed deviation along/about an axis between the actual tcp position and the one set by the program.
+		self.rtde_c.forceMode(vector, selection_vector, wrench, type, limits)
 		lift_axis = 0
+		test = self.rtde_c.moveUntilContact([0, 0, 0.01, 0, 0, 0], [0, 0, 1, 0, 0, 0])
+		print(test)
 
-		# TODO: fix this. won't work like that. Need proper data type
-		_zero_acc = [0.0, 0.0, 0.0]
-		_result = np.isclose(self.rtde_r.getActualToolAccelerometer(), _zero_acc)
-		if _result[lift_axis]:
-			# while in HRC/colift
-			while self.status == 'HRC/colift':
-				# get desired axis
-				left, right = self.call_hand_calib_server()
-				# TODO: check if x is the correct axis for the side motion
-				# TODO: check if 0.4 TH is enough or too much
-				if(self.left_hand_pose.position.x > 0.4):
-					vector = [1.0, 0.0, 0.0]
-				elif(self.left_hand_pose.position.x < -0.4):
-					vector = [-1.0, 0.0, 0.0]
-				else:
-					vector = [-1.0, 0.0, 0.0] # complient in all axes
-				# set force to that axis
-				self.rtde_c.forceMode(vector, selection_vector, wrench, type)
-				# check if still in colift
-				if(self.right_hand_pose.position.x < -0.25 and self.right_hand_pose.position.z < -0.15):
-					self.rtde_c.forceModeStop()
-					self.status = 'HRC/release'
-				elif(self.right_hand_pose.orientation.w > 0.707 and self.right_hand_pose.orientation.x < 0.707):
-					self.rtde_c.forceModeStop()
-					self.status = 'HRC/idle'	
-					self.hrc_idle(from_colift=True)
-				else:
-					self.status = 'HRC/colift'
-		self.robot_pose = self.rtde_c.getTargetWaypoint()
+		# # TODO: fix this. won't work like that. Need proper data type
+		# _zero_acc = [0.0, 0.0, 0.0]
+		# _result = np.isclose(self.rtde_r.getActualToolAccelerometer(), _zero_acc)
+		# if _result[lift_axis]:
+		# 	# while in HRC/colift
+		# 	while self.status == 'HRC/colift':
+		# 		# get desired axis
+		# 		left, right = self.call_hand_calib_server()
+		# 		# TODO: check if x is the correct axis for the side motion
+		# 		# TODO: check if 0.4 TH is enough or too much
+		# 		if(self.left_hand_pose.position.x > 0.4):
+		# 			wrench = [5.0, 0.0, 0.0]
+		# 			limits = [500, 0, 0, 0, 0, 0]
+		# 		elif(self.left_hand_pose.position.x < -0.4):
+		# 			wrench = [-5.0, 0.0, 0.0]
+		# 			limits = [500, 0, 0, 0, 0, 0]
+		# 		else:
+		# 			wrench = [0.0, 0.0, 0.0] # complient in all axes
+		# 			limits = [500, 500, 500, 0, 0, 0]
+		# 		# set force to that axis
+		# 		self.rtde_c.forceMode(vector, selection_vector, wrench, type, limits)
+		# 		# check if still in colift
+		# 		if(self.right_hand_pose.position.x < -0.25 and self.right_hand_pose.position.z < -0.15):
+		# 			self.rtde_c.forceModeStop()
+		# 			self.status = 'HRC/release'
+		# 		elif(self.right_hand_pose.orientation.w > 0.707 and self.right_hand_pose.orientation.x < 0.707):
+		# 			self.rtde_c.forceModeStop()
+		# 			self.status = 'HRC/idle'	
+		# 			self.hrc_idle(from_colift=True)
+		# 		else:
+		# 			self.status = 'HRC/colift'
+		# self.robot_pose = self.rtde_c.getTargetWaypoint()
 		# bool = self.rtde_c.isSteady()
 		# std::vector<double> = self.rtde_r.getActualToolAccelerometer()
 
@@ -280,7 +286,7 @@ class RobotCommander:
 
 
 
-	def update2(self, x):
+	def update2(self):
 		try:
 			# self.rtde_c.servoL([self.robot_init[0], self.robot_init[1], self.robot_init[2], self.robot_init[3]+self.tcp_ori.x, self.robot_init[4]+self.tcp_ori.y, self.robot_init[5]+self.tcp_ori.z], 0.5, 0.3, 0.002, 0.1, 300)
 
@@ -289,6 +295,8 @@ class RobotCommander:
 			# 	  self.robot_init[1]-self.robot_pose[1],
 			# 	  self.robot_init[2]-self.robot_pose[2])
 			# self.rtde_c.servoL([self.robot_pose[0], self.robot_pose[1], self.robot_pose[2], self.robot_init[3], self.robot_init[4], self.robot_init[5]+x], 0.5, 0.3, 0.002, 0.1, 300)
+			self.status == 'HRC/colift'
+			self.hrc_colift()
 
 			return self.status
 		except KeyboardInterrupt:
