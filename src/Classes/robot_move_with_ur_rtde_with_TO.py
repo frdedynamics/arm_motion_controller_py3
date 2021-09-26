@@ -42,12 +42,12 @@ class RobotCommander:
 		# TODO: Fill missing prefedined poses
 		# self.robot_init = self.rtde_r.getActualTCPPose()
 		self.robot_current_TCP = Float32MultiArray()
-		self.home_teleop_approach = [-0.133, 0.686, -0.202, 2.381, -2.377, -0.418]
-		self.home_teleop = [-0.133, 0.686, -0.308, 2.381, -2.377, -0.418]
-		self.home_hrc = [-0.133, 0.802, -0.275, 2.443, -2.435, -2.331]
-		self.release_before = [0.697, 0.630, -0.138, 2.159, -2.894, -2.240]
-		self.release = [0.697, 0.630, -0.307, 2.159, -2.894, -2.240]
-		self.release_after = [0.697, 0.488, -0.307, 2.159, -2.894, -2.240]
+		self.home_teleop_approach = [-0.133, 0.686, 0.198, 2.381, -2.377, -0.418]
+		self.home_teleop = [-0.133, 0.686, 0.092, 2.381, -2.377, -0.418]
+		self.home_hrc = [-0.133, 0.802, 0.124, 2.443, -2.435, -2.331]
+		self.release_before = [0.697, 0.630, 0.261, 2.159, -2.894, -2.240]
+		self.release = [0.697, 0.630, 0.092, 2.159, -2.894, -2.240]
+		self.release_after = [0.697, 0.488, 0.092, 2.159, -2.894, -2.240]
 		self.robot_colift_init = []
 
 		# print("============ Arm current pose: ", self.rtde_r.getActualTCPPose())
@@ -70,7 +70,7 @@ class RobotCommander:
 		self.state = "IDLE"
 		self.role = "HUMAN_LEADING"  # or "ROBOT_LEADING"
 		self.hrc_status = String()
-		self.status = 'HRC/colift'
+		self.status = 'TO/idle'
 
 		self.wrist_calib_flag = False
 		self.tcp_ori = Vector3()
@@ -149,23 +149,23 @@ class RobotCommander:
 
 	def teleop_idle(self):
 		self.robot_pose = self.home_teleop
-		self.rtde_c.moveJ_IK(self.robot_pose)
-		if (self.right_hand_pose.orientation.w < 0.707 and self.right_hand_pose.orientation.x > 0.707):
-			self.status = 'TO/active'
-		else:
-			self.status = 'TO/idle'
+		self.rtde_c.moveL(self.robot_pose)
+		# if (self.right_hand_pose.orientation.w < 0.707 and self.right_hand_pose.orientation.x > 0.707):
+		# 	self.status = 'TO/active'
+		# else:
+		# 	self.status = 'TO/idle'
 		return self.status
 
 
 	def teleop_active(self):	
-		self.target_pose.position.x = - self.s * self.right_hand_pose.position.x
-		self.target_pose.position.y = - self.s * self.right_hand_pose.position.y
-		self.target_pose.position.z = self.s * self.right_hand_pose.position.z
+		self.target_pose.position.x = - self.sr * self.right_hand_pose.position.x
+		self.target_pose.position.y = - self.sr * self.right_hand_pose.position.y
+		self.target_pose.position.z = self.sr * self.right_hand_pose.position.z
 
 		corrected_target_pose = kinematic.q_rotate(self.human_to_robot_init_orientation, self.target_pose.position)
-		self.robot_pose[0] = self.home_teleop[0] + self.k * corrected_target_pose[0]
-		self.robot_pose[1] = self.home_teleop[1] - self.k * corrected_target_pose[1]
-		self.robot_pose[2] = self.home_teleop[2] + self.k * corrected_target_pose[2]
+		self.robot_pose[0] = self.home_teleop[0] + self.sl * corrected_target_pose[0]
+		self.robot_pose[1] = self.home_teleop[1] - self.sl * corrected_target_pose[1]
+		self.robot_pose[2] = self.home_teleop[2] + self.sl * corrected_target_pose[2]
 		self.robot_pose[3] = self.home_teleop[3]
 		self.robot_pose[4] = self.home_teleop[4]
 		self.robot_pose[5] = self.home_teleop[5] + self.so*self.tcp_ori.x
