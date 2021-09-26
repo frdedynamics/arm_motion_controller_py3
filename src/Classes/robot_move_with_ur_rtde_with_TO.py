@@ -42,12 +42,12 @@ class RobotCommander:
 		# TODO: Fill missing prefedined poses
 		# self.robot_init = self.rtde_r.getActualTCPPose()
 		self.robot_current_TCP = Float32MultiArray()
-		self.release_before = []
-		self.release_after = []
-		self.release = []
-		self.home_teleop_approach = []
-		self.home_teleop = []
-		self.home_hrc = []
+		self.home_teleop_approach = [-0.133, 0.686, -0.202, 2.381, -2.377, -0.418]
+		self.home_teleop = [-0.133, 0.686, -0.308, 2.381, -2.377, -0.418]
+		self.home_hrc = [-0.133, 0.802, -0.275, 2.443, -2.435, -2.331]
+		self.release_before = [0.697, 0.630, -0.138, 2.159, -2.894, -2.240]
+		self.release = [0.697, 0.630, -0.307, 2.159, -2.894, -2.240]
+		self.release_after = [0.697, 0.488, -0.307, 2.159, -2.894, -2.240]
 		self.robot_colift_init = []
 
 		# print("============ Arm current pose: ", self.rtde_r.getActualTCPPose())
