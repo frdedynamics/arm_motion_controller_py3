@@ -75,6 +75,8 @@ class RobotCommander:
 		self.wrist_calib_flag = False
 		self.tcp_ori = Vector3()
 		self.tcp_ori_init = Vector3()
+
+		self.do_flag = 0
                
 
 	def init_subscribers_and_publishers(self):
@@ -230,41 +232,45 @@ class RobotCommander:
 		limits = [0.5, 0.1, 0.1, 0.17, 0.17, 0.17]# (Float) 6d vector. For compliant axes, these values are the maximum allowed tcp speed along/about the axis. For non-compliant axes, these values are the maximum allowed deviation along/about an axis between the actual tcp position and the one set by the program.
 		self.rtde_c.forceMode(vector, selection_vector, wrench, type, limits)
 		lift_axis = 0
-		test = self.rtde_c.moveUntilContact([0, 0, 0.01, 0, 0, 0], [0, 0, 1, 0, 0, 0])
-		print(test)
+		
+		_result = self.rtde_c.moveUntilContact([0, 0, 0.03, 0, 0, 0], [0, 0, 1, 0, 0, 0])
+		
+		if _result:
+			print("here")		
+			self.do_flag += 1
+			print(self.do_flag)			
 
-		# # TODO: fix this. won't work like that. Need proper data type
-		# _zero_acc = [0.0, 0.0, 0.0]
-		# _result = np.isclose(self.rtde_r.getActualToolAccelerometer(), _zero_acc)
-		# if _result[lift_axis]:
-		# 	# while in HRC/colift
-		# 	while self.status == 'HRC/colift':
-		# 		# get desired axis
-		# 		left, right = self.call_hand_calib_server()
-		# 		# TODO: check if x is the correct axis for the side motion
-		# 		# TODO: check if 0.4 TH is enough or too much
-		# 		if(self.left_hand_pose.position.x > 0.4):
-		# 			wrench = [5.0, 0.0, 0.0]
-		# 			limits = [500, 0, 0, 0, 0, 0]
-		# 		elif(self.left_hand_pose.position.x < -0.4):
-		# 			wrench = [-5.0, 0.0, 0.0]
-		# 			limits = [500, 0, 0, 0, 0, 0]
-		# 		else:
-		# 			wrench = [0.0, 0.0, 0.0] # complient in all axes
-		# 			limits = [500, 500, 500, 0, 0, 0]
-		# 		# set force to that axis
-		# 		self.rtde_c.forceMode(vector, selection_vector, wrench, type, limits)
-		# 		# check if still in colift
-		# 		if(self.right_hand_pose.position.x < -0.25 and self.right_hand_pose.position.z < -0.15):
-		# 			self.rtde_c.forceModeStop()
-		# 			self.status = 'HRC/release'
-		# 		elif(self.right_hand_pose.orientation.w > 0.707 and self.right_hand_pose.orientation.x < 0.707):
-		# 			self.rtde_c.forceModeStop()
-		# 			self.status = 'HRC/idle'	
-		# 			self.hrc_idle(from_colift=True)
-		# 		else:
-		# 			self.status = 'HRC/colift'
-		# self.robot_pose = self.rtde_c.getTargetWaypoint()
+		if self.do_flag == 2:
+			print("do it")
+			while self.status == 'HRC/colift':
+				# get desired axis
+				left, right = self.call_hand_calib_server()
+				# TODO: check if x is the correct axis for the side motion
+				# TODO: check if 0.4 TH is enough or too much
+				if(self.left_hand_pose.position.x > 0.4):
+					wrench = [5.0, 0.0, 0.0]
+					limits = [500, 0, 0, 0, 0, 0]
+				elif(self.left_hand_pose.position.x < -0.4):
+					wrench = [-5.0, 0.0, 0.0]
+					limits = [500, 0, 0, 0, 0, 0]
+				else:
+					wrench = [0.0, 0.0, 0.0] # complient in all axes
+					limits = [500, 500, 500, 0, 0, 0]
+				# set force to that axis
+				self.rtde_c.forceMode(vector, selection_vector, wrench, type, limits)
+				# check if still in colift
+				if(self.right_hand_pose.position.x < -0.25 and self.right_hand_pose.position.z < -0.15):
+					self.rtde_c.forceModeStop()
+					self.status = 'HRC/release'
+					self.do_flag = 0
+				elif(self.right_hand_pose.orientation.w > 0.707 and self.right_hand_pose.orientation.x < 0.707):
+					self.rtde_c.forceModeStop()
+					self.status = 'HRC/idle'
+					self.do_flag = 0	
+					self.hrc_idle(from_colift=True)
+				else:
+					self.status = 'HRC/colift'
+		self.robot_pose = self.rtde_c.getTargetWaypoint()
 		# bool = self.rtde_c.isSteady()
 		# std::vector<double> = self.rtde_r.getActualToolAccelerometer()
 
@@ -272,8 +278,8 @@ class RobotCommander:
 		self.robot_pose = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # there is no target pose any longer
 		print("Moving to RELEASE pose")
 		self.rtde_c.servoStop()
-		self.rtde_c.moveJ_IK(self.release_before)
-		self.rtde_c.moveJ(self.release)
+		self.rtde_c.moveL(self.release_before)
+		self.rtde_c.moveL(self.release)
 		cmd_release = Bool()
 		cmd_release = False
 		self.pub_grip_cmd.publish(cmd_release)
