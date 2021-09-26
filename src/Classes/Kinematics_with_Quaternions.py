@@ -191,15 +191,18 @@ def list_to_pose(l):
     Convert [x,y,z,Rx,Ry,Rz] list as Pose(Point, Quaternion) object
     '''
     l_converted = Pose()
-    l_converted.position.x = l[0]
-    l_converted.position.y = l[1]
-    l_converted.position.z = l[2]
-    q = e2q(l[3], l[4], l[5] ,axes='rxyz')
-    l_converted.orientation.x = q[0]
-    l_converted.orientation.y = q[1]
-    l_converted.orientation.z = q[2]
-    l_converted.orientation.w = q[3]
-    return l_converted
+    if not len(l) == 6:
+        return l_converted
+    else:
+        l_converted.position.x = l[0]
+        l_converted.position.y = l[1]
+        l_converted.position.z = l[2]
+        q = e2q(l[3], l[4], l[5] ,axes='rxyz')
+        l_converted.orientation.x = q[0]
+        l_converted.orientation.y = q[1]
+        l_converted.orientation.z = q[2]
+        l_converted.orientation.w = q[3]
+        return l_converted
 
 def q_magnitude(q):
     q_mag = sqrt((q.w**2 + q.x**2 + q.y**2 + q.z**2))
