@@ -20,11 +20,11 @@ from math import atan2
 import pyquaternion as pq
 from sensor_msgs.msg import JointState
 from sensor_msgs.msg import Imu
-from geometry_msgs.msg import Vector3, Point
-from geometry_msgs.msg import Quaternion
+from geometry_msgs.msg import Pose, Quaternion, Point, Vector3
 from tf.transformations import quaternion_matrix as q2m
 from tf.transformations import euler_from_matrix as m2e
 from tf.transformations import euler_from_quaternion as q2e
+from tf.transformations import quaternion_from_euler as e2q
 from tf.transformations import quaternion_from_matrix as m2q
 from tf.transformations import rotation_matrix
 from tf.transformations import quaternion_about_axis
@@ -172,6 +172,34 @@ def q_tf_convert(q):
     q_converted[3] = q.w
     return q_converted
 
+def pose_to_list(p):
+    '''
+    Convert Pose(Point, Quaternion) object as [x,y,z,Rx,Ry,Rz]
+    '''
+    p_converted = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    p_converted[0] = p.position.x
+    p_converted[1] = p.position.y
+    p_converted[2] = p.position.z
+    q_euler = q2e([p.orientation.x, p.orientation.y, p.orientation.z, p.orientation.w])
+    p_converted[3] = q_euler[0]
+    p_converted[4] = q_euler[1]
+    p_converted[5] = q_euler[2]
+    return p_converted
+
+def list_to_pose(l):
+    '''
+    Convert [x,y,z,Rx,Ry,Rz] list as Pose(Point, Quaternion) object
+    '''
+    l_converted = Pose()
+    l_converted.position.x = l[0]
+    l_converted.position.y = l[1]
+    l_converted.position.z = l[2]
+    q = e2q(l[3], l[4], l[5] ,axes='rxyz')
+    l_converted.orientation.x = q[0]
+    l_converted.orientation.y = q[1]
+    l_converted.orientation.z = q[2]
+    l_converted.orientation.w = q[3]
+    return l_converted
 
 def q_magnitude(q):
     q_mag = sqrt((q.w**2 + q.x**2 + q.y**2 + q.z**2))
