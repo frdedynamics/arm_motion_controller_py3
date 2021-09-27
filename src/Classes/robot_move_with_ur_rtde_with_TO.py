@@ -4,7 +4,7 @@
 Subscribes two hand poses and drives the real UR5e robot in real-time.
 """
 from os import stat
-import sys
+import sys, time
 import rospy
 from math import pi
 from math import radians as d2r
@@ -244,58 +244,65 @@ class RobotCommander:
 		vector_full = self.rtde_r.getActualTCPPose()
 		vector = vector_full # A pose vector that defines the force frame relative to the base frame.
 		selection_vector = [1, 0, 0, 0, 0, 0] # A 6d vector of 0s and 1s. 1 means that the robot will be compliant in the corresponding axis of the task frame
-		wrench = [10.0, 0.0, 0.0, 0.0, 0.0, 0.0] # The forces/torques the robot will apply to its environment. The robot adjusts its position along/about compliant axis in order to achieve the specified force/torque. Values have no effect for non-compliant axes
+		wrench = [-10.0, 0.0, 0.0, 0.0, 0.0, 0.0] # The forces/torques the robot will apply to its environment. The robot adjusts its position along/about compliant axis in order to achieve the specified force/torque. Values have no effect for non-compliant axes
 		type = 2 # An integer [1;3] specifying how the robot interprets the force frame. 1: The force frame is transformed in a way such that its y-axis is aligned with a vector pointing from the robot tcp towards the origin of the force frame. 2: The force frame is not transformed. 3: The force frame is transformed in a way such that its x-axis is the projection of the robot tcp velocity vector onto the x-y plane of the force frame.
 		limits = [0.5, 0.1, 0.1, 0.17, 0.17, 0.17]# (Float) 6d vector. For compliant axes, these values are the maximum allowed tcp speed along/about the axis. For non-compliant axes, these values are the maximum allowed deviation along/about an axis between the actual tcp position and the one set by the program.
 		self.rtde_c.forceMode(vector, selection_vector, wrench, type, limits)
 		lift_axis = 0
 
-		print("In force mode")
-		
-		_result = self.rtde_c.moveUntilContact([0, 0, 0.03, 0, 0, 0], [0, 0, 1, 0, 0, 0])
+		_curr_force = self.rtde_r.getActualTCPForce()
+		print(_curr_force)
 
 		if(self.right_hand_pose.orientation.w < 0.707 and self.right_hand_pose.orientation.x > 0.707):
-					self.rtde_c.forceModeStop()
-					self.status = 'HRC/idle'
-					self.do_flag = 0
+						self.rtde_c.forceModeStop()
+						# self.status = 'HRC/idle'
+						print('HRC/idle')
 		
-		if _result:
-			print("Contact detected")		
-			self.do_flag += 1
-			print(self.do_flag)			
+		if _curr_force[0] > 1:
+			print("Side movement")
+			try:
+				while self.status == 'HRC/colift':
+					# get desired axis
+					# self.call_hand_calib_server()
+					print(self.left_hand_pose.position.x)
 
-		if self.do_flag == 2:
-			print("Lifting")
-			while self.status == 'HRC/colift':
-				# get desired axis
-				self.call_hand_calib_server()
-				# TODO: check if x is the correct axis for the side motion
-				# TODO: check if 0.4 TH is enough or too much
-				if(self.left_hand_pose.position.x > 0.4):
-					wrench = [5.0, 0.0, 0.0]
-					limits = [500, 0, 0, 0, 0, 0]
-				elif(self.left_hand_pose.position.x < -0.4):
-					wrench = [-5.0, 0.0, 0.0]
-					limits = [500, 0, 0, 0, 0, 0]
-				else:
-					wrench = [0.0, 0.0, 0.0] # complient in all axes
-					limits = [500, 500, 500, 0, 0, 0]
-				# set force to that axis
-				self.rtde_c.forceMode(vector, selection_vector, wrench, type, limits)
-				# check if still in colift
-				if(self.right_hand_pose.position.x < -0.25 and self.right_hand_pose.position.z < -0.15):
-					self.rtde_c.forceModeStop()
-					self.status = 'HRC/release'
-					self.do_flag = 0
-				elif(self.right_hand_pose.orientation.w > 0.707 and self.right_hand_pose.orientation.x < 0.707):
-					self.rtde_c.forceModeStop()
-					self.status = 'HRC/idle'
-					self.do_flag = 0	
-					self.hrc_idle(from_colift=True)
-				elif(self.hand_grip_strength.data < 75):
-					self.status = 'HRC/approach'
-				else:
-					self.status = 'HRC/colift'
+					# TODO: check if x is the correct axis for the side motion
+					if(self.left_hand_pose.position.x > -0.02):
+						self.rtde_c.forceModeStop()
+						print("left")
+						wrench = [5.0, 0.0, 0.0]
+						limits = [500, 0, 0, 0, 0, 0]
+					elif(self.left_hand_pose.position.x < 0.02):
+						self.rtde_c.forceModeStop()
+						print("right")
+						wrench = [-5.0, 0.0, 0.0]
+						limits = [500, 0, 0, 0, 0, 0]
+					else:
+						wrench = [0.0, 0.0, 0.0] # complient in all axes
+						limits = [500, 500, 500, 0, 0, 0]
+					# set force to that axis
+					
+					self.rtde_c.forceMode(vector, selection_vector, wrench, type, limits)
+					
+					# check if still in colift
+					if(self.right_hand_pose.position.x < -0.25 and self.right_hand_pose.position.z < -0.15):
+						# self.rtde_c.forceModeStop()
+						# self.status = 'HRC/release'
+						print('HRC/release')
+						self.do_flag = 0
+					elif(self.right_hand_pose.orientation.w < 0.707 and self.right_hand_pose.orientation.x > 0.707):
+						# self.rtde_c.forceModeStop()
+						# self.status = 'HRC/idle'
+						print('HRC/idle')
+						self.do_flag = 0	
+						# self.hrc_idle(from_colift=True)
+					elif(self.hand_grip_strength.data < 75):
+						self.status = 'HRC/approach'
+					else:
+						self.status = 'HRC/colift'
+			except KeyboardInterrupt:
+				rospy.signal_shutdown("KeyboardInterrupt")
+				raise
 		# self.robot_pose = self.rtde_c.getTargetWaypoint()
 		# bool = self.rtde_c.isSteady()
 		# std::vector<double> = self.rtde_r.getActualToolAccelerometer()
