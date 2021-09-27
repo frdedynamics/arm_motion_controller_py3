@@ -39,11 +39,11 @@ class HandCalibrate:
 
         
         print("Move to initial arm poses in 4 seconds...")
-        rospy.sleep(1)
-        print("3 seconds...")
-        rospy.sleep(1)
-        print("2 seconds...")
-        rospy.sleep(1)
+        # rospy.sleep(1)
+        # print("3 seconds...")
+        # rospy.sleep(1)
+        # print("2 seconds...")
+        # rospy.sleep(1)
         print("1 second...")
         rospy.sleep(1)
 

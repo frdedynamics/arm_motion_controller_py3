@@ -13,11 +13,12 @@ from math import pi
 def main(): 
 	Robot = RobotCommander(start_node=True)
 	Robot.init_subscribers_and_publishers()
+	Robot.rtde_c.moveL(Robot.home_teleop)
 	try:
 		while not rospy.is_shutdown():
-			# Robot.update()
+			Robot.update()
 			# print(Robot.tcp_ori)
-			Robot.update2(2*Robot.tcp_ori.x)
+			# Robot.update2(2*Robot.tcp_ori.x)
 			Robot.r.sleep()
 	except KeyboardInterrupt:
 		rospy.signal_shutdown("KeyboardInterrupt")
