@@ -72,7 +72,8 @@ class RobotCommander:
 		self.hrc_status = String()
 		self.status = 'TO/idle'
 
-		self.colift_dir = 'null'
+		self.colift_dir = 'up'
+		self.colift_flag = False
 		self.hrc_hand_calib_flag = False
 		self.hrc_colift_calib_flag = False
 		self.wrist_calib_flag = False
@@ -257,13 +258,29 @@ class RobotCommander:
 		_curr_force = self.rtde_r.getActualTCPForce()
 		# print(_curr_force[0])
 
-		if(self.right_hand_pose.orientation.w < 0.707 and self.right_hand_pose.orientation.x > 0.707):
-						self.rtde_c.forceModeStop()
-						self.status = 'HRC/idle'
-						print('HRC/idle')
+		if self.colift_dir == 'right':
+			print(self.status)
+			vector = self.rtde_r.getActualTCPPose()
+			selection_vector = [0, 1, 0, 0, 0, 0] 
+			wrench = [0.0, 10.0, 0.0, 0.0, 0.0, 0.0]
+			limits = [0.1, 0.5, 0.1, 0.17, 0.17, 0.17]
+
+		elif self.colift_dir == 'left':
+			print(self.status)
+			vector = self.rtde_r.getActualTCPPose()
+			selection_vector = [0, 1, 0, 0, 0, 0]
+			wrench = [0.0, -10.0, 0.0, 0.0, 0.0, 0.0]
+			limits = [0.1, 0.5, 0.1, 0.17, 0.17, 0.17]
+
+		elif self.colift_dir == 'up':
+			print(self.status)
+			vector = self.rtde_r.getActualTCPPose()
+			selection_vector = [1, 0, 0, 0, 0, 0]
+			wrench = [-10.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+			limits = [0.5, 0.1, 0.1, 0.17, 0.17, 0.17]
 		
-		# if _curr_force[0] > 1:
-		if self.tcp_ori.x > 0.6:
+		if abs(_curr_force[0]) > 1:
+		# if self.tcp_ori.x > 0.6:
 			print("Side movement")
 			height_th = 0.1
 			# colift_dir = ''
@@ -273,82 +290,26 @@ class RobotCommander:
 			elif((self.elbow_left_height > height_th) and (self.elbow_right_height < height_th)):
 				self.colift_dir = 'left'
 			else:
-				self.colift_dir = 'null'
-
-			if self.colift_dir == 'right':
-				print(self.status)
-				vector = self.rtde_r.getActualTCPPose()
-				selection_vector = [0, 1, 0, 0, 0, 0] 
-				wrench = [0.0, 10.0, 0.0, 0.0, 0.0, 0.0]
-				limits = [0.1, 0.5, 0.1, 0.17, 0.17, 0.17]
-
-			elif self.colift_dir == 'left':
-				print(self.status)
-				vector = self.rtde_r.getActualTCPPose()
-				selection_vector = [0, 1, 0, 0, 0, 0]
-				wrench = [0.0, -10.0, 0.0, 0.0, 0.0, 0.0]
-				limits = [0.1, 0.5, 0.1, 0.17, 0.17, 0.17]
-
-			# 	# get desired axis
-			# 	# self.call_hand_calib_server()
-
-			# 	# TODO: check if x is the correct axis for the side motion
-			# 	if((self.elbow_right_height > height_th) and (self.elbow_left_height < height_th)):
-			# 		colift_dir = 'right'
-			# 		if not colift_dir_past == colift_dir:
-			# 			# print(colift_dir)
-			# 			self.rtde_c.forceModeStop()
-			# 		# vector_full = self.rtde_r.getActualTCPPose()
-			# 		# vector = vector_full
-			# 		# selection_vector = [0, 1, 0, 0, 0, 0]
-			# 		# wrench = [0.0, 10.0, 0.0, 0.0, 0.0, 0.0]
-			# 		# limits = [0.1, 0.5, 0.1, 0.17, 0.17, 0.17]
-			# 		# self.rtde_c.forceMode(vector, selection_vector, wrench, type, limits)
-
-			# 	elif((self.elbow_left_height > height_th) and (self.elbow_right_height < height_th)):
-			# 		colift_dir = 'left'
-			# 		if not colift_dir_past == colift_dir:
-			# 			# print(colift_dir)
-			# 			self.rtde_c.forceModeStop()
-			# 		# vector_full = self.rtde_r.getActualTCPPose()
-			# 		# vector = vector_full
-			# 		# selection_vector = [0, 1, 0, 0, 0, 0]
-			# 		# wrench = [0.0, -10.0, 0.0, 0.0, 0.0, 0.0]
-			# 		# limits = [0.1, 0.5, 0.1, 0.17, 0.17, 0.17]
-			# 		# self.rtde_c.forceMode(vector, selection_vector, wrench, type, limits)
-
-			# 	else:
-			# 		colift_dir = 'null'
-			# 		if not colift_dir_past == colift_dir:
-			# 			# print(colift_dir,colift_dir_past)
-			# 			self.rtde_c.forceModeStop()
-			# 		vector_full = self.rtde_r.getActualTCPPose()
-			# 		vector = vector_full
-			# 		selection_vector = [1, 1, 1, 0, 0, 0]
-			# 		wrench = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # complient in all axes
-			# 		limits = [0.1, 0.1, 0.1, 0.17, 0.17, 0.17]
-			# 		# self.rtde_c.forceMode(vector, selection_vector, wrench, type, limits)
-						
-			# 	colift_dir_past = colift_dir
-
-				# set force to that axis
-				# self.rtde_c.forceMode(vector, selection_vector, wrench, type, limits)
-				
-				# check if still in colift
-				if(self.right_hand_pose.position.x < -0.25 and self.right_hand_pose.position.z < -0.15):
-					self.rtde_c.forceModeStop()
-					self.status = 'HRC/release'
-					print('HRC/release')
-					self.do_flag = 0
-				elif(self.right_hand_pose.orientation.w < 0.707 and self.right_hand_pose.orientation.x > 0.707):
-					self.rtde_c.forceModeStop()
-					self.status = 'HRC/idle'
-					print('HRC/idle')
-					# self.hrc_idle(from_colift=True)
-				elif(self.hand_grip_strength.data < 75):
-					self.status = 'HRC/approach'
+				if not self.colift_flag:
+					self.colift_flag = True
 				else:
-					self.status = 'HRC/colift'
+					self.colift_dir = 'null'
+				
+		# check if still in colift
+		if(self.right_hand_pose.position.x < -0.25 and self.right_hand_pose.position.z < -0.15):
+			self.rtde_c.forceModeStop()
+			self.status = 'HRC/release'
+			print('HRC/release')
+			self.do_flag = 0
+		elif(self.right_hand_pose.orientation.w < 0.707 and self.right_hand_pose.orientation.x > 0.707):
+			self.rtde_c.forceModeStop()
+			self.status = 'HRC/idle'
+			print('HRC/idle')
+			# self.hrc_idle(from_colift=True)
+		elif(self.hand_grip_strength.data < 75):
+			self.status = 'HRC/approach'
+		else:
+			self.status = 'HRC/colift'
 		# self.robot_pose = self.rtde_c.getTargetWaypoint()
 		# bool = self.rtde_c.isSteady()
 		# std::vector<double> = self.rtde_r.getActualToolAccelerometer()
