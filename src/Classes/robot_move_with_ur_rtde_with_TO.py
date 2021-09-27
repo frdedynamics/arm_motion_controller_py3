@@ -230,6 +230,7 @@ class RobotCommander:
 		elif(self.hand_grip_strength.data > 75):
 			if not self.hrc_colift_calib_flag:
 				# self.call_hand_calib_server()
+				self.rtde_c.servoStop()
 				self.robot_colift_init = self.rtde_r.getActualTCPPose()
 				self.hrc_colift_calib_flag = True
 			self.status = 'HRC/colift'
@@ -253,7 +254,7 @@ class RobotCommander:
 		
 		_result = self.rtde_c.moveUntilContact([0, 0, 0.03, 0, 0, 0], [0, 0, 1, 0, 0, 0])
 
-		if(self.right_hand_pose.orientation.w > 0.707 and self.right_hand_pose.orientation.x < 0.707):
+		if(self.right_hand_pose.orientation.w < 0.707 and self.right_hand_pose.orientation.x > 0.707):
 					self.rtde_c.forceModeStop()
 					self.status = 'HRC/idle'
 					self.do_flag = 0
@@ -267,7 +268,7 @@ class RobotCommander:
 			print("Lifting")
 			while self.status == 'HRC/colift':
 				# get desired axis
-				left, right = self.call_hand_calib_server()
+				self.call_hand_calib_server()
 				# TODO: check if x is the correct axis for the side motion
 				# TODO: check if 0.4 TH is enough or too much
 				if(self.left_hand_pose.position.x > 0.4):
