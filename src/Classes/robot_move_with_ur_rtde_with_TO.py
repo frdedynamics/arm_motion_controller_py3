@@ -73,6 +73,8 @@ class RobotCommander:
 		self.hrc_status = String()
 		self.status = 'TO/idle'
 
+		self.hrc_hand_calib_flag = False
+		self.hrc_colift_calib_flag = False
 		self.wrist_calib_flag = False
 		self.tcp_ori = Vector3()
 		self.tcp_ori_init = Vector3()
@@ -173,9 +175,12 @@ class RobotCommander:
 		self.rtde_c.servoL(self.robot_pose, 0.5, 0.3, 0.01, 0.1, 300)
 
 		print(self.tcp_ori.x)
+		print(self.right_hand_pose.orientation.w, self.right_hand_pose.orientation.x)
 		if (self.right_hand_pose.orientation.w < 0.707 and self.right_hand_pose.orientation.x > 0.707): # right rotate upwards
 			print(self.tcp_ori.x)
 			if (self.tcp_ori.x > 0.6):
+				self.rtde_c.servoStop()
+				self.rtde_c.moveL(self.home_hrc)
 				self.status = 'HRC/idle'
 			else:
 				self.status = 'TO/idle'
@@ -187,14 +192,13 @@ class RobotCommander:
 
 	def hrc_idle(self, from_colift=False):
 		self.rtde_c.servoStop()
-		if not from_colift:
-			# self.robot_pose = self.home_hrc
-			self.rtde_c.moveL(self.home_hrc)
-		# if((self.tcp_ori.x < -0.5) and (self.right_hand_pose.orientation.w < 0.707 and self.right_hand_pose.orientation.x > 0.707)): # right rotate upwards
-		# 	self.status = 'TO/idle'
+		# if not from_colift:
+		# 	# self.robot_pose = self.home_hrc
+		# 	self.rtde_c.moveL(self.home_hrc)
 		if(self.right_hand_pose.orientation.w > 0.707 and self.right_hand_pose.orientation.x < 0.707): # right rotate downwards
-			self.home_hrc_approach = self.rtde_r.getActualTCPPose()
-			self.call_hand_calib_server()
+			if not self.hrc_hand_calib_flag:
+				self.call_hand_calib_server()
+				self.hrc_hand_calib_flag = True
 			self.status = 'HRC/approach'
 		else:
 			self.status = 'HRC/idle'
@@ -211,6 +215,7 @@ class RobotCommander:
 		self.target_pose.orientation = self.left_hand_pose.orientation
 
 		corrected_target_pose = kinematic.q_rotate(self.human_to_robot_init_orientation, self.target_pose.position)
+		print(len(self.robot_pose), len(self.home_hrc), len(corrected_target_pose))
 		self.robot_pose[0] = self.home_hrc[0] + self.sl * corrected_target_pose[0]
 		self.robot_pose[1] = self.home_hrc[1] - self.sl * corrected_target_pose[1]
 		self.robot_pose[2] = self.home_hrc[2] + self.sl * corrected_target_pose[2]
@@ -219,18 +224,18 @@ class RobotCommander:
 		self.rtde_c.servoL(self.robot_pose,0.5, 0.3, 0.002, 0.1, 300)
 
 		print(self.right_hand_pose.orientation.w, self.right_hand_pose.orientation.x)
-		if(self.right_hand_pose.orientation.w > 0.707 and self.right_hand_pose.orientation.x < 0.707): # right rotate upwards
+		if(self.right_hand_pose.orientation.w < 0.707 and self.right_hand_pose.orientation.x > 0.707): # right rotate upwards
 			self.status = 'HRC/idle'
 		
 		elif(self.hand_grip_strength.data > 75):
-			left, right = self.call_hand_calib_server()
-			self.robot_colift_init = self.rtde_r.getActualTCPPose()
+			if not self.hrc_colift_calib_flag:
+				# self.call_hand_calib_server()
+				self.robot_colift_init = self.rtde_r.getActualTCPPose()
+				self.hrc_colift_calib_flag = True
 			self.status = 'HRC/colift'
 
 		else:
 			self.status = 'HRC/approach'
-			
-		self.motion_hand_colift_init = self.left_hand_pose
 
 	def hrc_colift(self):
 		# TODO: any problem coming from IDLE but not from APPROACH?
@@ -243,16 +248,23 @@ class RobotCommander:
 		limits = [0.5, 0.1, 0.1, 0.17, 0.17, 0.17]# (Float) 6d vector. For compliant axes, these values are the maximum allowed tcp speed along/about the axis. For non-compliant axes, these values are the maximum allowed deviation along/about an axis between the actual tcp position and the one set by the program.
 		self.rtde_c.forceMode(vector, selection_vector, wrench, type, limits)
 		lift_axis = 0
+
+		print("In force mode")
 		
 		_result = self.rtde_c.moveUntilContact([0, 0, 0.03, 0, 0, 0], [0, 0, 1, 0, 0, 0])
+
+		if(self.right_hand_pose.orientation.w > 0.707 and self.right_hand_pose.orientation.x < 0.707):
+					self.rtde_c.forceModeStop()
+					self.status = 'HRC/idle'
+					self.do_flag = 0
 		
 		if _result:
-			print("here")		
+			print("Contact detected")		
 			self.do_flag += 1
 			print(self.do_flag)			
 
 		if self.do_flag == 2:
-			print("do it")
+			print("Lifting")
 			while self.status == 'HRC/colift':
 				# get desired axis
 				left, right = self.call_hand_calib_server()
@@ -279,9 +291,11 @@ class RobotCommander:
 					self.status = 'HRC/idle'
 					self.do_flag = 0	
 					self.hrc_idle(from_colift=True)
+				elif(self.hand_grip_strength.data < 75):
+					self.status = 'HRC/approach'
 				else:
 					self.status = 'HRC/colift'
-		self.robot_pose = self.rtde_c.getTargetWaypoint()
+		# self.robot_pose = self.rtde_c.getTargetWaypoint()
 		# bool = self.rtde_c.isSteady()
 		# std::vector<double> = self.rtde_r.getActualToolAccelerometer()
 
@@ -332,8 +346,7 @@ class RobotCommander:
 			self.hrc_approach()
 			pass
 		elif status == 'HRC/colift':
-			# self.hrc_colift()
-			pass
+			self.hrc_colift()
 		elif status == 'HRC/release':
 			# self.hrc_release()
 			pass
