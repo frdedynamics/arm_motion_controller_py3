@@ -58,9 +58,8 @@ class RobotCommander:
 		self.right_hand_pose = Pose()
 		self.robot_pose = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
-		self.target_pose_colift_init = Pose()
-		self.motion_hand_colift_init = Pose()
-		self.motion_hand_colift_pos_ch = Point()
+		self.elbow_left_height = 0.0
+		self.elbow_right_height = 0.0
 
 		self.hand_init_orientation = Quaternion()
 		self.human_to_robot_init_orientation = Quaternion(0.0, 0.0, 0.707, 0.707)
@@ -93,8 +92,19 @@ class RobotCommander:
 		self.pub_hrc_status = rospy.Publisher('/hrc_status', String, queue_size=1)
 		self.pub_grip_cmd = rospy.Publisher('/cmd_grip_bool', Bool, queue_size=1)
 
+		self.sub_elbow_left = rospy.Subscriber('/elbow_left', Pose, self.cb_elbow_left)
+		self.sub_elbow_right= rospy.Subscriber('/elbow_right', Pose, self.cb_elbow_right)
+
 
 	####### Callback methods #######
+
+	def cb_elbow_left(self, msg):
+		self.elbow_left_height = msg.position.z
+
+		
+	def cb_elbow_right(self, msg):
+		self.elbow_right_height = msg.position.z
+
 
 	def cb_sensor_lw(self, msg):
 		""" Subscribes the pure IMU RPY topic to control robot TCP orientation"""
@@ -174,10 +184,7 @@ class RobotCommander:
 
 		self.rtde_c.servoL(self.robot_pose, 0.5, 0.3, 0.01, 0.1, 300)
 
-		print(self.tcp_ori.x)
-		print(self.right_hand_pose.orientation.w, self.right_hand_pose.orientation.x)
 		if (self.right_hand_pose.orientation.w < 0.707 and self.right_hand_pose.orientation.x > 0.707): # right rotate upwards
-			print(self.tcp_ori.x)
 			if (self.tcp_ori.x > 0.6):
 				self.rtde_c.servoStop()
 				self.rtde_c.moveL(self.home_hrc)
@@ -203,7 +210,6 @@ class RobotCommander:
 		else:
 			self.status = 'HRC/idle'
 
-		print(self.hand_grip_strength.data)
 		return self.status
 
 	def hrc_approach(self):
@@ -223,8 +229,8 @@ class RobotCommander:
 
 		self.rtde_c.servoL(self.robot_pose,0.5, 0.3, 0.002, 0.1, 300)
 
-		print(self.right_hand_pose.orientation.w, self.right_hand_pose.orientation.x)
 		if(self.right_hand_pose.orientation.w < 0.707 and self.right_hand_pose.orientation.x > 0.707): # right rotate upwards
+			self.rtde_c.servoStop()
 			self.status = 'HRC/idle'
 		
 		elif(self.hand_grip_strength.data > 75):
@@ -251,50 +257,65 @@ class RobotCommander:
 		lift_axis = 0
 
 		_curr_force = self.rtde_r.getActualTCPForce()
-		print(_curr_force)
+		print(_curr_force[0])
 
 		if(self.right_hand_pose.orientation.w < 0.707 and self.right_hand_pose.orientation.x > 0.707):
 						self.rtde_c.forceModeStop()
-						# self.status = 'HRC/idle'
+						self.status = 'HRC/idle'
 						print('HRC/idle')
 		
 		if _curr_force[0] > 1:
 			print("Side movement")
+			height_th = 0.1
+			colift_dir = ''
+			colift_dir_past = ''
 			try:
 				while self.status == 'HRC/colift':
 					# get desired axis
 					# self.call_hand_calib_server()
-					print(self.left_hand_pose.position.x)
+					print(self.elbow_left_height, self.elbow_right_height)
 
 					# TODO: check if x is the correct axis for the side motion
-					if(self.left_hand_pose.position.x > -0.02):
-						self.rtde_c.forceModeStop()
-						print("left")
-						wrench = [5.0, 0.0, 0.0]
-						limits = [500, 0, 0, 0, 0, 0]
-					elif(self.left_hand_pose.position.x < 0.02):
-						self.rtde_c.forceModeStop()
-						print("right")
-						wrench = [-5.0, 0.0, 0.0]
-						limits = [500, 0, 0, 0, 0, 0]
+					if((self.elbow_right_height > height_th) and (self.elbow_left_height < height_th)):
+						colift_dir = 'right'
+						if not colift_dir_past == colift_dir:
+							self.rtde_c.forceModeStop()
+							wrench = [5.0, 0.0, 0.0]
+							limits = [500, 0, 0, 0, 0, 0]
+							self.rtde_c.forceMode(vector, selection_vector, wrench, type, limits)
+
+					elif((self.elbow_left_height > height_th) and (self.elbow_right_height < height_th)):
+						colift_dir = 'left'
+						if not colift_dir_past == colift_dir:
+							self.rtde_c.forceModeStop()
+							wrench = [-5.0, 0.0, 0.0]
+							limits = [500, 0, 0, 0, 0, 0]
+							self.rtde_c.forceMode(vector, selection_vector, wrench, type, limits)
+
 					else:
-						wrench = [0.0, 0.0, 0.0] # complient in all axes
-						limits = [500, 500, 500, 0, 0, 0]
+						colift_dir = 'null'
+						if not colift_dir_past == colift_dir:
+							self.rtde_c.forceModeStop()
+							wrench = [0.0, 0.0, 0.0] # complient in all axes
+							limits = [500, 500, 500, 0, 0, 0]
+							self.rtde_c.forceMode(vector, selection_vector, wrench, type, limits)
+							
+					print(colift_dir)
+					colift_dir_past = colift_dir
+
 					# set force to that axis
-					
-					self.rtde_c.forceMode(vector, selection_vector, wrench, type, limits)
+					# self.rtde_c.forceMode(vector, selection_vector, wrench, type, limits)
 					
 					# check if still in colift
 					if(self.right_hand_pose.position.x < -0.25 and self.right_hand_pose.position.z < -0.15):
-						# self.rtde_c.forceModeStop()
-						# self.status = 'HRC/release'
+						self.rtde_c.forceModeStop()
+						self.status = 'HRC/release'
 						print('HRC/release')
 						self.do_flag = 0
 					elif(self.right_hand_pose.orientation.w < 0.707 and self.right_hand_pose.orientation.x > 0.707):
-						# self.rtde_c.forceModeStop()
-						# self.status = 'HRC/idle'
+						self.rtde_c.forceModeStop()
+						self.status = 'HRC/idle'
 						print('HRC/idle')
-						self.do_flag = 0	
 						# self.hrc_idle(from_colift=True)
 					elif(self.hand_grip_strength.data < 75):
 						self.status = 'HRC/approach'
@@ -356,15 +377,14 @@ class RobotCommander:
 		elif status == 'HRC/colift':
 			self.hrc_colift()
 		elif status == 'HRC/release':
-			# self.hrc_release()
-			pass
-			# user_input = input("Ready to new cycle?")
-			# if user_input == 'y':
-			# 	# self.rtde_c.moveJ_IK(self.home_teleop_approach)
-			# 	# self.rtde_c.moveJ(self.home_teleop)
-			# 	self.status = 'TO/idle'
-			# else:
-			# 	self.status = 'IDLE'
+			self.hrc_release()
+			user_input = input("Ready to new cycle?")
+			if user_input == 'y':
+				self.rtde_c.moveL(self.home_teleop_approach)
+				self.rtde_c.moveL(self.home_teleop)
+				self.status = 'TO/idle'
+			else:
+				self.status = 'IDLE'
 		elif status == 'IDLE':
 			print("System is in halt, please restart all the nodes for calibration")
 			sys.exit()
