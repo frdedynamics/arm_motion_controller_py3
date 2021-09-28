@@ -202,14 +202,19 @@ class RobotCommander:
 	def hrc_idle(self, from_colift=False):
 		self.rtde_c.servoStop()
 		self.rtde_c.forceModeStop()
+		print("IDLE again")
 		# if not from_colift:
 		# 	# self.robot_pose = self.home_hrc
 		# 	self.rtde_c.moveL(self.home_hrc)
 		if(self.right_hand_pose.orientation.w > 0.707 and self.right_hand_pose.orientation.x < 0.707): # right rotate downwards
 			if not self.hrc_hand_calib_flag:
+				print("IDLE calib")
 				self.call_hand_calib_server()
 				self.hrc_hand_calib_flag = True
-			self.status = 'HRC/approach'
+			if self.hand_grip_strength.data > 75:
+				self.status = 'HRC/colift'
+			else:
+				self.status = 'HRC/approach'
 		else:
 			self.status = 'HRC/idle'
 
@@ -302,7 +307,7 @@ class RobotCommander:
 			self.status = 'HRC/release'
 			print('HRC/release')
 		elif(self.right_hand_pose.orientation.w < 0.707 and self.right_hand_pose.orientation.x > 0.707):
-			self.rtde_c.forceModeStop()
+			# self.rtde_c.forceModeStop()
 			self.status = 'HRC/idle'
 			print('HRC/idle')
 			# self.hrc_idle(from_colift=True)
@@ -361,11 +366,10 @@ class RobotCommander:
 			# sys.exit()
 		elif status == 'HRC/approach':
 			self.hrc_approach()
-			pass
 		elif status == 'HRC/colift':
+			print()
 			self.hrc_colift()
 		elif status == 'HRC/release':
-			print("HERE")
 			self.hrc_release()
 			user_input = input("Ready to new cycle?")
 			if user_input == 'y':
