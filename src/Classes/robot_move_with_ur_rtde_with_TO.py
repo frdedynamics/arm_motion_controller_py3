@@ -201,6 +201,7 @@ class RobotCommander:
 
 	def hrc_idle(self, from_colift=False):
 		self.rtde_c.servoStop()
+		self.rtde_c.forceModeStop()
 		# if not from_colift:
 		# 	# self.robot_pose = self.home_hrc
 		# 	self.rtde_c.moveL(self.home_hrc)
@@ -279,8 +280,8 @@ class RobotCommander:
 			wrench = [-10.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 			limits = [0.5, 0.1, 0.1, 0.17, 0.17, 0.17]
 		
-		if abs(_curr_force[0]) > 1:
-		# if self.tcp_ori.x > 0.6:
+		# if abs(_curr_force[0]) > 1:
+		if self.tcp_ori.x > 0.6:
 			print("Side movement")
 			height_th = 0.1
 			# colift_dir = ''
@@ -297,10 +298,9 @@ class RobotCommander:
 				
 		# check if still in colift
 		if(self.right_hand_pose.position.x < -0.25 and self.right_hand_pose.position.z < -0.15):
-			self.rtde_c.forceModeStop()
+			# self.rtde_c.forceModeStop()
 			self.status = 'HRC/release'
 			print('HRC/release')
-			self.do_flag = 0
 		elif(self.right_hand_pose.orientation.w < 0.707 and self.right_hand_pose.orientation.x > 0.707):
 			self.rtde_c.forceModeStop()
 			self.status = 'HRC/idle'
@@ -317,9 +317,9 @@ class RobotCommander:
 		self.rtde_c.forceMode(vector, selection_vector, wrench, type, limits)
 
 	def hrc_release(self):
-		self.robot_pose = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # there is no target pose any longer
 		print("Moving to RELEASE pose")
 		self.rtde_c.servoStop()
+		self.rtde_c.forceModeStop()
 		self.rtde_c.moveL(self.release_before)
 		self.rtde_c.moveL(self.release)
 		cmd_release = Bool()
@@ -365,6 +365,7 @@ class RobotCommander:
 		elif status == 'HRC/colift':
 			self.hrc_colift()
 		elif status == 'HRC/release':
+			print("HERE")
 			self.hrc_release()
 			user_input = input("Ready to new cycle?")
 			if user_input == 'y':
