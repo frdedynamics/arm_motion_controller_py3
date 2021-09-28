@@ -8,10 +8,11 @@ Action server is included because I need to initialize hand pose in Colift state
 """
 
 import numpy as np
+from Classes import Kinematics_with_Quaternions as kinematics
 
 import rospy, actionlib
 from arm_motion_controller_py3.msg import handCalibrationAction, handCalibrationFeedback, handCalibrationResult
-from geometry_msgs.msg import Pose, Point
+from geometry_msgs.msg import Pose, Point, Quaternion
 
 from Classes.DH_matrices import DHmatrices
 
@@ -21,6 +22,11 @@ class HandCalibrate:
     def __init__(self):
         self.wrist_left_pose = Pose()
         self.wrist_right_pose = Pose()
+        self.init_flag = False
+        self.wrist_left_ori_init = Quaternion()
+        self.wrist_right_ori_init = Quaternion()
+        self.left = Pose()
+        self.right = Pose()
         print("Initiated")
 
     def init_node(self, rate=100.0):
@@ -50,12 +56,24 @@ class HandCalibrate:
         self.calc_inv()
 
     def calc_inv(self):
-        self.left_htm_init = DHmatrices.pose_to_htm(self.wrist_left_pose)
-        self.right_htm_init = DHmatrices.pose_to_htm(self.wrist_right_pose)
-        print("Initial arm poses registered")
+        if not self.init_flag:
+            self.wrist_left_ori_init = kinematics.q_invert(self.wrist_left_pose.orientation)
+            self.wrist_right_ori_init = kinematics.q_invert(self.wrist_right_pose.orientation)
+            self.init_flag = True
+        
+        self.left.position = self.wrist_left_pose.position
+        self.left.orientation = kinematics.q_multiply(self.wrist_left_ori_init, self.wrist_left_pose.orientation)
+        self.right.position = self.wrist_right_pose.position
+        self.right.orientation = kinematics.q_multiply(self.wrist_right_ori_init, self.wrist_right_pose.orientation)
+
+        self.left_htm_init = DHmatrices.pose_to_htm(self.left)
+        self.right_htm_init = DHmatrices.pose_to_htm(self.right)
+        
 
         self.left_htm_init_inv = np.linalg.inv(self.left_htm_init)
         self.right_htm_init_inv = np.linalg.inv(self.right_htm_init)
+        print("Initial arm poses registered")
+
 
     def update(self):
         tf_left = np.matmul(self.left_htm_init_inv, DHmatrices.pose_to_htm(self.wrist_left_pose)) 
