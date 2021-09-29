@@ -27,6 +27,7 @@ if __name__ == '__main__':
     tfBuffer = tf2_ros.Buffer()
     listener = tf2_ros.TransformListener(tfBuffer)
     rate = rospy.Rate(100.0)
+    rospy.set_param('ref_frame', ref)
     print("Publishing wrist and elbow poses")
 
 
