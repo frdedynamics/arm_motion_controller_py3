@@ -87,5 +87,5 @@ if __name__ == "__main__":
 			rate.sleep()
 	except KeyboardInterrupt:
 		data_logger.disable_logging()
-        rospy.signal_shutdown("KeyboardInterrupt")
-        raise
+		rospy.signal_shutdown("KeyboardInterrupt")
+		raise

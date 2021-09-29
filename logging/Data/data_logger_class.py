@@ -10,7 +10,7 @@ This is a data_logger class. Subscribes the IMU readings and save them into a CS
 from queue import Queue, Empty
 import threading
 import csv
-import data
+import Data.data as data
 
 
 # Private Globals
@@ -58,9 +58,10 @@ def disable_logging():
 
 class DataLogger(threading.Thread):
     def __init__(self):
+        self.username = input("Please enter user name:")
         threading.Thread.__init__(self)
         self.daemon = True
-        self.filename = data.get_new_filename()
+        self.filename = data.get_new_filename(self.username)
         self.fp = open(self.filename, 'w')
         self.writer = csv.writer(self.fp, lineterminator='\n')
         # write the header of the CSV file (the labels of each field/feature)

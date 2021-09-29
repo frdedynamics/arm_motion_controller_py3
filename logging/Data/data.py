@@ -18,8 +18,8 @@ from datetime import datetime
 
 # OUTPUT_FOLDER = "../Output"  # take it as a rosparam
 # OUTPUT_FOLDER = "/home/gizem/Documents/Gitkraken/arm-paper/DataOutput"  # take it as a rosparam
-OUTPUT_FOLDER = "/home/gizem/Documents/OnedriveHVL/Belgelerim/PhD Related/Papers/Conceptualized HRC/Data"  # take it as a rosparam
-OUTPUT_FILENAME_PREFIX = "2arms_ur5e"
+OUTPUT_FOLDER = "/home/gizem/catkin_ws/src/arm_motion_controller_py3/logging/Data/Output"  # take it as a rosparam
+OUTPUT_FILENAME_PREFIX = "HRI2022"
 
 
 # DATA_LABELS = ('ID_ELAPSED_TIME',
@@ -71,8 +71,8 @@ DATA_LABELS = ('ID_ELAPSED_TIME',
 DATA_INDICES = list(range(0,len(DATA_LABELS)))
 
 
-def get_new_filename():
-    postfix = datetime.now().strftime('%Y-%m-%d-%H-%M-%S') + ".csv"
+def get_new_filename(user_name):
+    postfix = datetime.now().strftime('%Y-%m-%d-%H-%M-%S') + user_name +".csv"
     filename = OUTPUT_FILENAME_PREFIX + "_" + postfix
     # filename = "full_cycle_rt.csv"
     # if folder doesn't exist, create it
