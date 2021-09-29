@@ -209,6 +209,14 @@ class RobotCommander:
 		if(self.right_hand_pose.orientation.w > 0.707 and self.right_hand_pose.orientation.x < 0.707): # right rotate downwards
 			if not self.hrc_hand_calib_flag:
 				print("IDLE calib")
+				print("Move to initial arm poses in 4 seconds...")
+				rospy.sleep(1)
+				print("3 seconds...")
+				rospy.sleep(1)
+				print("2 seconds...")
+				rospy.sleep(1)
+				print("1 second...")
+				rospy.sleep(1)
 				self.call_hand_calib_server()
 				self.hrc_hand_calib_flag = True
 			if self.hand_grip_strength.data > 75:
@@ -219,6 +227,7 @@ class RobotCommander:
 			self.status = 'HRC/idle'
 
 		return self.status
+
 
 	def hrc_approach(self):
 		''' old cartesian_2_arms here 
