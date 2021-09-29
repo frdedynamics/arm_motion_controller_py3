@@ -22,6 +22,7 @@ OUTPUT_FOLDER = "/home/gizem/catkin_ws/src/arm_motion_controller_py3/logging/Dat
 OUTPUT_FILENAME_PREFIX = "HRI"
 
 
+
 # DATA_LABELS = ('ID_ELAPSED_TIME',
 # 				'ID_LHAND_POS_X',
 # 				'ID_LHAND_POS_Y',
