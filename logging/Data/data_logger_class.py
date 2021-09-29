@@ -11,12 +11,14 @@ from queue import Queue, Empty
 import threading
 import csv
 import Data.data as data
+import rospy
 
 
 # Private Globals
 _DATA = Queue()
 _DATA_LOGGER = None
 _logging_enabled = False
+_ref_frame = None
 
 
 # Functions
@@ -38,11 +40,13 @@ def log_metrics(time, lhand_pose, rhand_pose, hand_pose, tgoal_pose, tactual_pos
         return
 
 
-def enable_logging():
+def enable_logging(username, ref):
     global _DATA_LOGGER
     global _logging_enabled
     _logging_enabled = True
-    _DATA_LOGGER = DataLogger()  # thread here
+    # username = 'gizem'
+    # ref = 'base'
+    _DATA_LOGGER = DataLogger(username, ref)  # thread here
     _DATA_LOGGER.start() ## start thread not start() module of your logger.
     print("enable_logging")
 
@@ -57,11 +61,12 @@ def disable_logging():
 
 
 class DataLogger(threading.Thread):
-    def __init__(self):
-        self.username = input("Please enter user name:")
+    def __init__(self, username, ref):
+        self.username = username
+        self.ref = ref
         threading.Thread.__init__(self)
         self.daemon = True
-        self.filename = data.get_new_filename(self.username)
+        self.filename = data.get_new_filename(self.username, self.ref)
         self.fp = open(self.filename, 'w')
         self.writer = csv.writer(self.fp, lineterminator='\n')
         # write the header of the CSV file (the labels of each field/feature)

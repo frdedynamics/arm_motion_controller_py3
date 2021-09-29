@@ -4,7 +4,7 @@
 		TODO: make it as gui as you did before.
 """
 
-import rospy, time
+import rospy, time, sys
 import Data.data_logger_class as data_logger
 from geometry_msgs.msg import Pose
 from geometry_msgs.msg import Vector3
@@ -67,7 +67,15 @@ if __name__ == "__main__":
 		rospy.init_node('data_logger_node')
 		start_time = time.time()
 		current_time = rospy.get_time()
-		data_logger.enable_logging()
+		if not rospy.has_param('ref_frame'):
+			print("Reference frame parameter has not set. Exiting...")
+			sys.exit()
+		else:
+			param = rospy.get_param('ref_frame')
+			print('here')
+		username = input("Please enter username: ")
+		ref_frame = input("Please enter reference frame: ")
+		data_logger.enable_logging(username,ref_frame)
 
 		sub_lhand_pose = rospy.Subscriber('/wrist_left', Pose, callback_lhand_pose)
 		sub_rhand_pose = rospy.Subscriber('/wrist_right', Pose, callback_rhand_pose)
