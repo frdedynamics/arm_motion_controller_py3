@@ -64,9 +64,10 @@ DATA_LABELS = ('ID_ELAPSED_TIME',
 				'ID_LHAND',
 				'ID_RHAND',
 				'ID_HAND',
-				'ID_TGOAL',
-				'ID_TACTUAL',
-                'ID_TACTUAL_CORRECTED',
+                'ID_LELBOW',
+                'ID_RELBOW',
+                'ID_GRIP_STRENGTH',
+                'ID_TCP',
                 'ID_STATUS')
 
 DATA_INDICES = list(range(0,len(DATA_LABELS)))
