@@ -264,7 +264,8 @@ class RobotCommander:
 	def hrc_colift(self):
 		# TODO: any problem coming from IDLE but not from APPROACH?
 		''' Make force thingy here '''
-		vector = self.rtde_r.getActualTCPPose() # A pose vector that defines the force frame relative to the base frame.
+		# vector = self.rtde_r.getActualTCPPose() # A pose vector that defines the force frame relative to the base frame.
+		vector = [0, 0, 0, 0, 0, 0]
 		selection_vector = [0, 0, 0, 0, 0, 0] # A 6d vector of 0s and 1s. 1 means that the robot will be compliant in the corresponding axis of the task frame
 		wrench = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] # The forces/torques the robot will apply to its environment. The robot adjusts its position along/about compliant axis in order to achieve the specified force/torque. Values have no effect for non-compliant axes
 		type = 2 # An integer [1;3] specifying how the robot interprets the force frame. 1: The force frame is transformed in a way such that its y-axis is aligned with a vector pointing from the robot tcp towards the origin of the force frame. 2: The force frame is not transformed. 3: The force frame is transformed in a way such that its x-axis is the projection of the robot tcp velocity vector onto the x-y plane of the force frame.
@@ -275,21 +276,21 @@ class RobotCommander:
 
 		if self.colift_dir == 'right':
 			print(self.status)
-			vector = self.rtde_r.getActualTCPPose()
+			# vector = self.rtde_r.getActualTCPPose()
 			selection_vector = [0, 1, 0, 0, 0, 0] 
 			wrench = [0.0, 10.0, 0.0, 0.0, 0.0, 0.0]
 			limits = [0.1, 0.5, 0.1, 0.17, 0.17, 0.17]
 
 		elif self.colift_dir == 'left':
 			print(self.status)
-			vector = self.rtde_r.getActualTCPPose()
+			# vector = self.rtde_r.getActualTCPPose()
 			selection_vector = [0, 1, 0, 0, 0, 0]
 			wrench = [0.0, -10.0, 0.0, 0.0, 0.0, 0.0]
 			limits = [0.1, 0.5, 0.1, 0.17, 0.17, 0.17]
 
 		elif self.colift_dir == 'up':
 			print(self.status)
-			vector = self.rtde_r.getActualTCPPose()
+			# vector = self.rtde_r.getActualTCPPose()
 			selection_vector = [1, 0, 0, 0, 0, 0]
 			wrench = [-10.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 			limits = [0.5, 0.1, 0.1, 0.17, 0.17, 0.17]
