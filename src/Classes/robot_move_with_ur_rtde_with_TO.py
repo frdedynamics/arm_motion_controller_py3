@@ -89,13 +89,13 @@ class RobotCommander:
 		self.sub_right_hand_pose = rospy.Subscriber('/right_hand_pose', Pose, self.cb_right_hand_pose)
 		self.sub_human_ori = rospy.Subscriber('/human_ori', Quaternion, self.cb_human_ori)
 		self.sub_sensor_lw = rospy.Subscriber('/sensor_l_wrist_rpy', Vector3, self.cb_sensor_lw)
-		self.pub_tcp_goal = rospy.Publisher('/Tcp_goal_pose', Pose, queue_size=1)
-		self.pub_tcp_actual = rospy.Publisher('/Tcp_actual', Float32MultiArray, queue_size=1)
-		self.pub_hrc_status = rospy.Publisher('/hrc_status', String, queue_size=1)
-		self.pub_grip_cmd = rospy.Publisher('/cmd_grip_bool', Bool, queue_size=1)
-
 		self.sub_elbow_left = rospy.Subscriber('/elbow_left', Pose, self.cb_elbow_left)
 		self.sub_elbow_right= rospy.Subscriber('/elbow_right', Pose, self.cb_elbow_right)
+
+		self.pub_tcp_current = rospy.Publisher('/tcp_current', Float32MultiArray, queue_size=1)
+		self.pub_hrc_status = rospy.Publisher('/hrc_status', String, queue_size=1)
+
+
 
 
 	####### Callback methods #######
@@ -400,8 +400,8 @@ class RobotCommander:
 		# self.hrc_status = self.state + ',' + self.role
 		# self.hrc_status = self.status
 
-		# self.pub_hrc_status.publish(status)
-		# self.robot_current_TCP.data = self.rtde_r.getActualTCPPose()
-		# self.pub_tcp_actual.publish(self.robot_current_TCP)
+		self.pub_hrc_status.publish(status)
+		self.robot_current_TCP.data = self.rtde_r.getActualTCPPose()
+		self.pub_tcp_current.publish(self.robot_current_TCP)
 		# robot_pose_pose = kinematic.list_to_pose(self.robot_pose)
 		# self.pub_tcp_goal.publish(robot_pose_pose)
