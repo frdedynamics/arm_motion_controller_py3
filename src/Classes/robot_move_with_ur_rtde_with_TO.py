@@ -296,27 +296,28 @@ class RobotCommander:
 		if self.colift_dir == 'right':
 			print(self.status)
 			# vector = self.rtde_r.getActualTCPPose()
-			selection_vector = [0, 1, 0, 0, 0, 0] 
-			wrench = [0.0, 10.0, 0.0, 0.0, 0.0, 0.0]
-			limits = [0.1, 0.5, 0.1, 0.17, 0.17, 0.17]
+			selection_vector = [1, 0, 0, 0, 0, 0] 
+			wrench = [10.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+			limits = [0.5, 0.1, 0.1, 0.17, 0.17, 0.17]
 
 		elif self.colift_dir == 'left':
-			print(self.status)
-			# vector = self.rtde_r.getActualTCPPose()
-			selection_vector = [0, 1, 0, 0, 0, 0]
-			wrench = [0.0, -10.0, 0.0, 0.0, 0.0, 0.0]
-			limits = [0.1, 0.5, 0.1, 0.17, 0.17, 0.17]
-
-		elif self.colift_dir == 'up':
 			print(self.status)
 			# vector = self.rtde_r.getActualTCPPose()
 			selection_vector = [1, 0, 0, 0, 0, 0]
 			wrench = [-10.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 			limits = [0.5, 0.1, 0.1, 0.17, 0.17, 0.17]
+
+		elif self.colift_dir == 'up':
+			print(self.status)
+			# vector = self.rtde_r.getActualTCPPose()
+			selection_vector = [0, 0, 1, 0, 0, 0]
+			wrench = [0.0, 0.0, 10.0, 0.0, 0.0, 0.0]
+			limits = [0.1, 0.1, 0.5, 0.17, 0.17, 0.17]
 		
 		# if abs(_curr_force[0]) > 1:
-		if self.tcp_ori.x > 0.6:
+		if self.tcp_ori.z > 1.0:
 			print("Side movement")
+			print(self.elbow_right_height, self.elbow_left_height)
 			height_th = 0.1
 			# colift_dir = ''
 			# colift_dir_past = ''
