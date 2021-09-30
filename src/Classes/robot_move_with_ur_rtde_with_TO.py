@@ -22,6 +22,7 @@ from tf.transformations import quaternion_from_euler as e2q
 from tf.transformations import euler_from_quaternion as q2e
 from tf.transformations import quaternion_multiply
 from tf.transformations import euler_from_matrix
+from tf.transformations import quaternion_about_axis
 
 from . import Kinematics_with_Quaternions as kinematic
 
@@ -120,9 +121,9 @@ class RobotCommander:
 			self.tcp_ori_init.y = msg.y
 			self.tcp_ori_init.z = msg.z
 			self.wrist_calib_flag = True
-		self.tcp_ori.x = d2r(msg.y-self.tcp_ori_init.y)
-		self.tcp_ori.z = 0
-		self.tcp_ori.y = 0  ## This didn't give good results
+		self.tcp_ori.x = d2r(msg.x-self.tcp_ori_init.x)
+		self.tcp_ori.z = d2r(msg.y-self.tcp_ori_init.y)
+		self.tcp_ori.y = d2r(msg.z-self.tcp_ori_init.z)  ## This didn't give good results
 
 
 	def cb_human_ori(self, msg):
@@ -188,22 +189,22 @@ class RobotCommander:
 		self.robot_pose[3:] = self.home_teleop[3:]
 
 		joints = self.rtde_c.getInverseKinematics(self.robot_pose)
+		joints[3] += self.tcp_ori.z
 		joints[4] += self.tcp_ori.x
+		joints[5] += self.tcp_ori.y
 		self.rtde_c.servoJ(joints,0.5, 0.3, 0.002, 0.1, 300)
-
-
 		
-		# TODO: only once for computation
-		# print(self.so*self.tcp_ori.x)
-		# q_home_rot = e2q(2.31, 0, 0, axes='szyx')
-		# e_result = q2e(q_home_rot, axes='szyx')
-		# q_l_wrist = e2q(0.0, 0.0, 0.0, axes='sxyz')
+		# # TODO: only once for computation
+		# # print(self.so*self.tcp_ori.x)
+		# q_home_rot = e2q(3.14, 0, 0, axes='szyx')
+		# # e_result = q2e(q_home_rot, axes='szxy')
+		# q_l_wrist = e2q(self.tcp_ori.z, self.tcp_ori.y, self.tcp_ori.x, axes='sxyz')
 		# q_result = quaternion_multiply(q_l_wrist, q_home_rot)
-		# e_result = q2e(q_result, axes='sxyz')
-		# print(e_result)
-		# r = np.matmul((np.matmul(RotMat.Rx(2.381),RotMat.Ry(-2.377))), RotMat.Rz(-0.418))
-		# e_result = euler_from_matrix(r)
-		# print(e_result)
+		# e_result = q2e(q_result, axes='szxy')
+		# # print(e_result)
+		# # r = np.matmul((np.matmul(RotMat.Rx(2.381),RotMat.Ry(-2.377))), RotMat.Rz(-0.418))
+		# # e_result = euler_from_matrix(r)
+		# # print(e_result)
 
 		# self.robot_pose[3:] = [2.381, -2.377, -0.418]
 		# self.robot_pose[3:] = e_result
