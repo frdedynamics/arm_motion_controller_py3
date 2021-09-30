@@ -18,6 +18,11 @@ from sensor_msgs.msg import JointState
 from std_msgs.msg import String, Int16, Float64, Bool
 from std_msgs.msg import Float32MultiArray
 
+from tf.transformations import quaternion_from_euler as e2q
+from tf.transformations import euler_from_quaternion as q2e
+from tf.transformations import quaternion_multiply
+from tf.transformations import euler_from_matrix
+
 from . import Kinematics_with_Quaternions as kinematic
 
 from rtde_control import RTDEControlInterface as RTDEControl
@@ -180,11 +185,30 @@ class RobotCommander:
 		self.robot_pose[0] = self.home_teleop[0] + self.sl * corrected_target_pose[0]
 		self.robot_pose[1] = self.home_teleop[1] - self.sl * corrected_target_pose[1]
 		self.robot_pose[2] = self.home_teleop[2] + self.sl * corrected_target_pose[2]
-		self.robot_pose[3] = self.home_teleop[3]
-		self.robot_pose[4] = self.home_teleop[4]
-		self.robot_pose[5] = self.home_teleop[5] - self.so*self.tcp_ori.x
+		self.robot_pose[3:] = self.home_teleop[3:]
 
-		self.rtde_c.servoL(self.robot_pose, 0.5, 0.3, 0.01, 0.1, 300)
+		joints = self.rtde_c.getInverseKinematics(self.robot_pose)
+		joints[4] += self.tcp_ori.x
+		self.rtde_c.servoJ(joints,0.5, 0.3, 0.002, 0.1, 300)
+
+
+		
+		# TODO: only once for computation
+		# print(self.so*self.tcp_ori.x)
+		# q_home_rot = e2q(2.31, 0, 0, axes='szyx')
+		# e_result = q2e(q_home_rot, axes='szyx')
+		# q_l_wrist = e2q(0.0, 0.0, 0.0, axes='sxyz')
+		# q_result = quaternion_multiply(q_l_wrist, q_home_rot)
+		# e_result = q2e(q_result, axes='sxyz')
+		# print(e_result)
+		# r = np.matmul((np.matmul(RotMat.Rx(2.381),RotMat.Ry(-2.377))), RotMat.Rz(-0.418))
+		# e_result = euler_from_matrix(r)
+		# print(e_result)
+
+		# self.robot_pose[3:] = [2.381, -2.377, -0.418]
+		# self.robot_pose[3:] = e_result
+
+		# self.rtde_c.servoL(self.robot_pose, 0.5, 0.3, 0.01, 0.1, 300)
 
 		if (self.right_hand_pose.orientation.w < 0.707 and self.right_hand_pose.orientation.x > 0.707): # right rotate upwards
 			if (self.tcp_ori.x > 0.6):
@@ -242,7 +266,7 @@ class RobotCommander:
 		self.robot_pose[0] = self.home_hrc[0] + self.sl * corrected_target_pose[0]
 		self.robot_pose[1] = self.home_hrc[1] - self.sl * corrected_target_pose[1]
 		self.robot_pose[2] = self.home_hrc[2] + self.sl * corrected_target_pose[2]
-		self.robot_pose[3:] = self.home_hrc[3:]
+
 
 		self.rtde_c.servoL(self.robot_pose,0.5, 0.3, 0.002, 0.1, 300)
 

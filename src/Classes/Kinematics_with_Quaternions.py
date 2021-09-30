@@ -36,6 +36,38 @@ import scipy.integrate as integrate
 # Private Globals
 gravity = [0, -9.81, 0]  # TODO: can be tuned # gravity vector in global frame
 
+class RotMat():
+
+    # Rotation Matrices
+    @staticmethod
+    def Rx(t):
+        # return np.array([[1.0, 0.0, 0.0],[0.0, cos(t), -sin(t)],[0.0, sin(t), cos(t)]])
+        return np.array([[1.0, 0.0, 0.0, 0.0],[0.0, cos(t), -sin(t), 0.0],[0.0, sin(t), cos(t), 0.0], [0.0, 0.0, 0.0, 1.0]])
+
+    @staticmethod
+    def Ry(t):
+        # return np.array([[cos(t), 0.0, sin(t)],[0.0, 1.0, 0.0],[-sin(t), 0.0, cos(t)]])
+        return np.array([[cos(t), 0.0, sin(t), 0.0],[0.0, 1.0, 0.0, 0.0],[-sin(t), 0.0, cos(t), 0.0], [0.0, 0.0, 0.0, 1.0]])
+
+    @staticmethod
+    def Rz(t):
+        # return np.array([[cos(t), -sin(t), 0.0],[sin(t), cos(t), 0.0],[0.0, 0.0, 1.0]])
+        return np.array([[cos(t), -sin(t), 0.0, 0.0],[sin(t), cos(t), 0.0, 0.0],[0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]])
+    
+    @staticmethod
+    def htm(t, a, d, s):
+        '''
+        Homogenous Transformation Matrix from Frame (n-1) to Frame (n)
+        @params: t = theta (i)
+        @params: a = alpha (i-1)
+        @params: d = link length (i)
+        @params: s = link offset (i-1)
+        '''
+        return np.array([[cos(t), -sin(t), 0.0, s],
+                         [cos(a)*sin(t), cos(a)*cos(t), -sin(a), -d*sin(a)],
+                         [sin(a)*sin(t), sin(a)*cos(t), cos(a), d*cos(a)], 
+                         [0.0, 0.0, 0.0, 1.0]])
+
 
 # Private Functions
 def q_scale(q, s):
@@ -145,7 +177,7 @@ def q_multiply(q, p):
         q_multiplied.z = q.w*p.z + q.z*p.w + q.x*p.y - q.y*p.x
         return q_multiplied
     elif type(q) == np.ndarray:
-        print("type: np.array()")
+        # print("type: np.array()")
         q_multiplied = np.array([0.0, 0.0, 0.0, 1.0])  # 'xyzw'
         q_multiplied[0] = q[3]*p[0] + q[0]*p[3] + q[1]*p[2] - q[2]*p[1]
         q_multiplied[1] = q[3]*p[1] + q[1]*p[3] - q[0]*p[2] + q[2]*p[0]
@@ -153,7 +185,7 @@ def q_multiply(q, p):
         q_multiplied[3] = q[3]*p[3] - q[0]*p[0] - q[1]*p[1] - q[2]*p[2]
         return q_multiplied
     elif type(q) == type(q_pq):
-        print("type: pyquaternion/Quaternion")
+        # print("type: pyquaternion/Quaternion")
         q_multiplied = q*p
         return q_multiplied
     else:
@@ -205,7 +237,8 @@ def list_to_pose(l):
         return l_converted
 
 def q_magnitude(q):
-    q_mag = sqrt((q.w**2 + q.x**2 + q.y**2 + q.z**2))
+    # q_mag = sqrt((q.w**2 + q.x**2 + q.y**2 + q.z**2))
+    q_mag = sqrt((q[0]**2 + q[1]**2 + q[2]**2 + q[3]**2))
     return q_mag
 
 
