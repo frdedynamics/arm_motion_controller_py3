@@ -35,9 +35,25 @@ class RobotCommander:
 		"""Initializes the robot commander
 			@params s: motion hand - steering hand scale
 			@params k: target hand pose - robot pose scale"""
+
+
 		self.rtde_c = RTDEControl("172.31.1.144", RTDEControl.FLAG_USE_EXT_UR_CAP)
 		self.rtde_r = rtde_receive.RTDEReceiveInterface("172.31.1.144")
-		# self.rtde_c.moveL(self.home_teleop)
+		# self.rtde_c.moveJ(self.home_teleop_joints)
+
+		self.robot_current_TCP = Float32MultiArray()
+		self.home_teleop_approach_joints = [d2r(-157.76), d2r(-82.74), d2r(84.07), 0.0, d2r(36.73), d2r(275.52)]
+		self.home_teleop_joints = [d2r(-81.93), d2r(-47.26), d2r(63.47), d2r(253.82), d2r(-90), d2r(101)]
+		self.home_teleop = [-0.239, 0.738, 0.130, 2.164, -2.279, 0.0]
+		# self.home_teleop = self.rtde_c.getForwardKinematics(self.home_teleop_joints)
+		self.hrc_appr = [-0.247, 0.486, 0.130, 2.222, -2.184, 0.0]
+		self.home_hrc_joints = [d2r(-74), d2r(-54.50), d2r(114.17), d2r(-62.04), d2r(109.24), d2r(90)]
+		self.home_hrc= [-0.239, 0.628, 0.079, 2.443, 2.288, 2.512]
+		# self.home_hrc= self.rtde_c.getForwardKinematics(self.home_hrc_joints)
+		self.release_before = [0.610, 0.661, 0.308, 2.389, 1.842, 2.613]
+		self.release = [0.610, 0.661, 0.099, 2.388, 1.842, 2.613]
+		self.release_after = [0.610, 0.547, 0.099, 2.353, 1.855, 2.614]
+		self.robot_colift_init = []
 
 		if start_node == True:
 			rospy.init_node("robot_move_with_ur_rtde")
@@ -48,14 +64,6 @@ class RobotCommander:
 		# TODO: Fill missing prefedined poses
 		# self.robot_init = self.rtde_r.getActualTCPPose()
 		self.robot_current_TCP = Float32MultiArray()
-		self.home_teleop_approach = [-0.133, 0.686, 0.198, 2.381, -2.377, -0.418]
-		self.home_teleop = [-0.133, 0.686, 0.092, 2.381, -2.377, -0.418]
-		self.robot_init = [-0.133, 0.686, 0.092, 2.381, -2.377, -0.418]
-		self.home_hrc = [-0.133, 0.802, 0.124, 2.443, -2.435, -2.331]
-		self.release_before = [0.697, 0.630, 0.261, 2.159, -2.894, -2.240]
-		self.release = [0.697, 0.630, 0.092, 2.159, -2.894, -2.240]
-		self.release_after = [0.697, 0.488, 0.092, 2.159, -2.894, -2.240]
-		self.robot_colift_init = []
 
 		# print("============ Arm current pose: ", self.rtde_r.getActualTCPPose())
 		self.target_pose = Pose()
@@ -189,32 +197,18 @@ class RobotCommander:
 		self.robot_pose[3:] = self.home_teleop[3:]
 
 		joints = self.rtde_c.getInverseKinematics(self.robot_pose)
-		joints[3] += self.tcp_ori.z
-		joints[4] += self.tcp_ori.x
-		joints[5] += self.tcp_ori.y
+		joints[3] -= self.tcp_ori.z
+		joints[4] -= self.tcp_ori.x
+		joints[5] -= self.tcp_ori.y
 		self.rtde_c.servoJ(joints,0.5, 0.3, 0.002, 0.1, 300)
-		
-		# # TODO: only once for computation
-		# # print(self.so*self.tcp_ori.x)
-		# q_home_rot = e2q(3.14, 0, 0, axes='szyx')
-		# # e_result = q2e(q_home_rot, axes='szxy')
-		# q_l_wrist = e2q(self.tcp_ori.z, self.tcp_ori.y, self.tcp_ori.x, axes='sxyz')
-		# q_result = quaternion_multiply(q_l_wrist, q_home_rot)
-		# e_result = q2e(q_result, axes='szxy')
-		# # print(e_result)
-		# # r = np.matmul((np.matmul(RotMat.Rx(2.381),RotMat.Ry(-2.377))), RotMat.Rz(-0.418))
-		# # e_result = euler_from_matrix(r)
-		# # print(e_result)
 
-		# self.robot_pose[3:] = [2.381, -2.377, -0.418]
-		# self.robot_pose[3:] = e_result
 
-		# self.rtde_c.servoL(self.robot_pose, 0.5, 0.3, 0.01, 0.1, 300)
-
+		print(self.tcp_ori.x, self.tcp_ori.y, self.tcp_ori.z)
 		if (self.right_hand_pose.orientation.w < 0.707 and self.right_hand_pose.orientation.x > 0.707): # right rotate upwards
-			if (self.tcp_ori.x > 0.6):
+			if (self.tcp_ori.z > 1.0):
 				self.rtde_c.servoStop()
-				self.rtde_c.moveL(self.home_hrc)
+				self.rtde_c.moveL(self.hrc_appr)
+				self.rtde_c.moveJ(self.home_hrc_joints)
 				self.status = 'HRC/idle'
 			else:
 				self.status = 'TO/idle'
@@ -267,7 +261,7 @@ class RobotCommander:
 		self.robot_pose[0] = self.home_hrc[0] + self.sl * corrected_target_pose[0]
 		self.robot_pose[1] = self.home_hrc[1] - self.sl * corrected_target_pose[1]
 		self.robot_pose[2] = self.home_hrc[2] + self.sl * corrected_target_pose[2]
-
+		self.robot_pose[3:] = self.home_hrc[3:]
 
 		self.rtde_c.servoL(self.robot_pose,0.5, 0.3, 0.002, 0.1, 300)
 
@@ -408,8 +402,8 @@ class RobotCommander:
 			self.hrc_release()
 			user_input = input("Ready to new cycle?")
 			if user_input == 'y':
-				self.rtde_c.moveL(self.home_teleop_approach)
-				self.rtde_c.moveL(self.home_teleop)
+				self.rtde_c.moveJ(self.home_teleop_approach_joints)
+				self.rtde_c.moveJ(self.home_teleop_joints)
 				self.status = 'TO/idle'
 			else:
 				self.status = 'IDLE'
