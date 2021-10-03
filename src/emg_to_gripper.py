@@ -28,7 +28,8 @@ if __name__ == '__main__':
     while not rospy.is_shutdown():
         try:
             pub_emg_sum.publish(emg_sum)  
-            if not emg_sum < 3000:
+            print(emg_sum)
+            if not emg_sum < 2000:
                 if gripper_open:
                     gripper_open =  False
                     pub_gripper.publish(gripper_open)

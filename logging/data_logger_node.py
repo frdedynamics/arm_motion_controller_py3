@@ -9,7 +9,7 @@ import Data.data_logger_class as data_logger
 from geometry_msgs.msg import Pose
 from geometry_msgs.msg import Vector3
 from nav_msgs.msg import Odometry
-from std_msgs.msg import Float32, String, Float32MultiArray 
+from std_msgs.msg import Int16, String, Float32MultiArray 
 
 # from get_model_gazebo_pose import GazeboModel
 
@@ -18,7 +18,7 @@ rhand_pose = Pose()
 lelbow_height = Pose()
 relbow_height = Pose()
 hand_pose = Pose()
-grip_strength = Float32()
+grip_strength = Int16()
 tcp_current = Float32MultiArray()
 status = String()
 
@@ -80,7 +80,7 @@ if __name__ == "__main__":
 		sub_elbow_left = rospy.Subscriber('/elbow_left', Pose, callback_lelbow_pose)
 		sub_elbow_right= rospy.Subscriber('/elbow_right', Pose, callback_relbow_pose)
 		sub_tcp = rospy.Subscriber('/tcp_current', Float32MultiArray, callback_tcp)
-		sub_grip_strength = rospy.Subscriber('/robotiq_grip_gap', Float32, callback_grip_strength)
+		sub_grip_strength = rospy.Subscriber('/robotiq_grip_gap', Int16, callback_grip_strength)
 		sub_hrc_status = rospy.Subscriber('/hrc_status', String, callback_hrc_status) 
 
 		rate = rospy.Rate(10)
