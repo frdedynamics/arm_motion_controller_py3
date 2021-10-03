@@ -284,7 +284,7 @@ class RobotCommander:
 			self.status = 'HRC/approach'
 
 	def hrc_colift(self):
-		f = 20
+		f = 15
 		# TODO: any problem coming from IDLE but not from APPROACH?
 		''' Make force thingy here '''
 		# vector = self.rtde_r.getActualTCPPose() # A pose vector that defines the force frame relative to the base frame.
@@ -324,7 +324,7 @@ class RobotCommander:
 		# if self.tcp_ori.z > 1.0:
 			# print("Side movement")
 			print(self.elbow_right_height, self.elbow_left_height)
-			height_th = 0.09
+			height_th = 0.08
 			print(self.colift_dir)
 			# print(_curr_force[0])
 			# colift_dir = ''
