@@ -29,7 +29,7 @@ if __name__ == '__main__':
         try:
             pub_emg_sum.publish(emg_sum)  
             print(emg_sum)
-            if not emg_sum < 2000:
+            if not emg_sum <   3000:
                 if gripper_open:
                     gripper_open =  False
                     pub_gripper.publish(gripper_open)
