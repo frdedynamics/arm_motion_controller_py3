@@ -31,7 +31,7 @@ import rtde_receive
 
 
 class RobotCommander:
-	def __init__(self, rate=100, start_node=False, sr=1.0, sl=1.0, so=2.0):
+	def __init__(self, rate=100, start_node=False, sr=1.5, sl=1.0, so=2.0):
 		"""Initializes the robot commander
 			@params s: motion hand - steering hand scale
 			@params k: target hand pose - robot pose scale"""
@@ -189,9 +189,9 @@ class RobotCommander:
 
 
 	def teleop_active(self):
-		self.target_pose.position.x = - self.sr * self.right_hand_pose.position.x
-		self.target_pose.position.y = - self.sr * self.right_hand_pose.position.y
-		self.target_pose.position.z = self.sr * self.right_hand_pose.position.z
+		self.target_pose.position.x = - 1 * self.right_hand_pose.position.x
+		self.target_pose.position.y = - 1 * self.right_hand_pose.position.y
+		self.target_pose.position.z = 1 * self.right_hand_pose.position.z
 
 		corrected_target_pose = kinematic.q_rotate(self.human_to_robot_init_orientation, self.target_pose.position)
 		self.robot_pose[0] = self.home_teleop[0] + self.sl * corrected_target_pose[0]

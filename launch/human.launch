@@ -12,7 +12,7 @@
   </node>
 
   <!-- Show in Rviz   -->
-  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find arm_motion_controller_py3)/launch/config/config_axes.rviz"/> 
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find arm_motion_controller_py3)/launch/config/human_vicon.rviz"/> 
 
   <!-- publish joint state
   <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
@@ -26,6 +26,8 @@
 
   <!-- Start spine-to-wrist tf. Creates upper-body pose -->
   <node name="spine_to_wrist_tf" type="spine_to_wrist_tf.py" pkg="arm_motion_controller_py3" />
+  
+  <node pkg="tf2_ros" type="static_transform_publisher" name="vicon_tf_broadcaster" args="0 0 0 0 0 1 0 world vicon/world" />
 
 
 </launch>
