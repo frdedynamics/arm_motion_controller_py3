@@ -44,6 +44,8 @@ if __name__ == '__main__':
         wrist_right_pose.orientation = trans_wrist_right.transform.rotation
         pub_left.publish(wrist_left_pose)
         pub_right.publish(wrist_right_pose)
+        print("wrist_left_pose", wrist_left_pose)
+        print("wrist_right_pose", wrist_right_pose)
 
         rate.sleep()
 

@@ -9,7 +9,7 @@
   <node pkg="arm_motion_controller_py3" name="world_to_myo_tf_publisher" type="world_to_myo.py"/>
 
 
-  <param name="human_description" command="$(find xacro)/xacro '$(find arm_motion_controller_py3)/urdf/human/chest_included.xacro'"/>
+  <param name="human_description" command="$(find xacro)/xacro '$(find arm_motion_controller_py3)/urdf/human/chest_included_npose.xacro'"/>
 
   <!-- Combine joint values -->
   <node name="human_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher">
@@ -32,7 +32,7 @@
   
 
   <!-- Start spine-to-wrist tf. Creates upper-body pose -->
-  <node name="spine_to_wrist_tf" type="spine_to_wrist_tf.py" pkg="arm_motion_controller_py3" />
+  <node name="spine_to_wrist_tf" type="spine_to_wrist_tf.py" pkg="arm_motion_controller_py3"/>
 
 
 </launch>

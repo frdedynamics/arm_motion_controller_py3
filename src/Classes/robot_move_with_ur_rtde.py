@@ -111,6 +111,7 @@ class RobotCommander:
 	def cb_steering_pose(self, msg):
 		""" Subscribes right hand pose """
 		self.steering_hand_pose = msg
+		print(self.steering_hand_pose)
 
 
 	def cartesian_control_2_arms(self):	
@@ -163,6 +164,7 @@ class RobotCommander:
 							self.robot_colift_init = self.rtde_r.getActualTCPPose()
 							self.colift_flag = True
 			elif(self.steering_hand_pose.orientation.w > 0.707 and self.steering_hand_pose.orientation.x < 0.707):
+				print(self.steering_hand_pose.orientation.w, self.steering_hand_pose.orientation.x)
 				self.state = "IDLE"
 				# if steering arm vertically downwords when it is in IDLE
 				# if(self.steering_hand_pose.position.x < -0.3 and self.steering_hand_pose.position.z < -0.4):

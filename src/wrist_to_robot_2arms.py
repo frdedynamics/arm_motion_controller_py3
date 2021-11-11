@@ -22,9 +22,9 @@ DHmatrices = DHmatrices()
 
 wrist_left_pose = Pose()
 wrist_right_pose = Pose()
-ur5e_init = Pose(Point(-0.300613689909, -0.396151355207,  0.171878358801), Quaternion(-0.29428855254, 0.660939846775, 0.650017802692, -0.232442730523))  # home = [pi/2, -pi/2, pi/2, pi, -pi/2, 0.0]
+# ur5e_init = Pose(Point(-0.300613689909, -0.396151355207,  0.171878358801), Quaternion(-0.29428855254, 0.660939846775, 0.650017802692, -0.232442730523))  # home = [pi/2, -pi/2, pi/2, pi, -pi/2, 0.0]
 
-ur5e_init_htm = DHmatrices.pose_to_htm(ur5e_init)
+# ur5e_init_htm = DHmatrices.pose_to_htm(ur5e_init)
 
 
 def cb_l_wrist(msg):
