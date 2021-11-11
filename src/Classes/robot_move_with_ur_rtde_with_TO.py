@@ -266,6 +266,7 @@ class RobotCommander:
 		self.robot_pose[2] = self.home_hrc[2] + self.sl * corrected_target_pose[2]
 		self.robot_pose[3:] = self.home_hrc[3:]
 
+		# Try publishing self.robot_pose for data logging.
 		self.rtde_c.servoL(self.robot_pose,0.5, 0.3, 0.002, 0.1, 300)
 
 		if(self.right_hand_pose.orientation.w < 0.707 and self.right_hand_pose.orientation.x > 0.707): # right rotate upwards
