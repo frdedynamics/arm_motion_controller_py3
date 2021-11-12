@@ -68,6 +68,7 @@ def main():
 	colift_dir = "up"
 	colift_flag = False
 
+
 	while not rospy.is_shutdown():
 		vector = rtde_r.getActualTCPPose() # A pose vector that defines the force frame relative to the base frame.
 		selection_vector = [0, 0, 0, 0, 0, 0] # A 6d vector of 0s and 1s. 1 means that the robot will be compliant in the corresponding axis of the task frame
@@ -81,43 +82,42 @@ def main():
 		if colift_dir == 'right':
 			vector = rtde_r.getActualTCPPose()
 			selection_vector = [0, 1, 0, 0, 0, 0] 
-			wrench = [0.0, 10.0, 0.0, 0.0, 0.0, 0.0]
+			wrench = [0.0, 20.0, 0.0, 0.0, 0.0, 0.0]
 			limits = [0.1, 0.5, 0.1, 0.17, 0.17, 0.17]
 
 		elif colift_dir == 'left':
 			vector = rtde_r.getActualTCPPose()
 			selection_vector = [0, 1, 0, 0, 0, 0]
-			wrench = [0.0, -10.0, 0.0, 0.0, 0.0, 0.0]
+			wrench = [0.0, -20.0, 0.0, 0.0, 0.0, 0.0]
 			limits = [0.1, 0.5, 0.1, 0.17, 0.17, 0.17]
 
 		elif colift_dir == 'up':
 			vector = rtde_r.getActualTCPPose()
 			selection_vector = [1, 0, 0, 0, 0, 0]
-			wrench = [-10.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+			wrench = [-20.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 			limits = [0.5, 0.1, 0.1, 0.17, 0.17, 0.17]
 		
-		# print(_curr_force)
+		print(_curr_force)
 		
-		# if abs(_curr_force[2]) > 2.0:
-		# if tcp_ori.x > 0.6:
-		# print("Side movement")
-		height_th = 100
-		# colift_dir = ''
-		# colift_dir_past = ''
-		print(e1, e2)
-		if((e1 > height_th) and (e2 < height_th)):
-			colift_dir = 'right'
-		elif((e1 < height_th) and (e2 > height_th)):
-			colift_dir = 'left'
-		elif((e1 > height_th) and (e2 > height_th)):
-			colift_dir = 'up'
-		else:
-			if not colift_flag:
-				colift_flag = True
+		if abs(_curr_force[1]) > 30.0:
+			# if tcp_ori.x > 0.6:
+			# print("Side movement")
+			height_th = 100
+			# colift_dir = ''
+			# colift_dir_past = ''
+			if((e1 > height_th) and (e2 < height_th)):
+				colift_dir = 'right'
+			elif((e1 < height_th) and (e2 > height_th)):
+				colift_dir = 'left'
+			elif((e1 > height_th) and (e2 > height_th)):
+				colift_dir = 'up'
 			else:
-				colift_dir = 'null'
-				
-		print(colift_dir)
+				if not colift_flag:
+					colift_flag = True
+				else:
+					colift_dir = 'null'	
+			print(colift_dir)
+
 		rtde_c.forceMode(vector, selection_vector, wrench, type, limits)
 		rate.sleep()
 
