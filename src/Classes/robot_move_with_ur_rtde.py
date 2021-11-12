@@ -297,6 +297,15 @@ class RobotCommander:
 				print(e)
 
 		else:
+
+			print("state:", self.state, "    role:", self.role)
+			self.hrc_status = self.state + ',' + self.role
+			self.pub_hrc_status.publish(self.hrc_status)
+			self.robot_current_TCP.data = self.rtde_r.getActualTCPPose()
+			self.pub_robot_current_TCP.publish(self.robot_current_TCP)
+			robot_current_TCP_pose = kinematic.list_to_pose(self.robot_current_TCP.data)
+			self.pub_robot_current_TCP_pose.publish(robot_current_TCP_pose)
+			
 			## RELEASE (or PLACE)
 			print("Moving to RELEASE pose")
 			self.rtde_c.servoStop()
@@ -306,10 +315,26 @@ class RobotCommander:
 			self.pub_tee_goal.publish(pose_goal)
 			self.rtde_c.moveJ(self.home_approach_joints)
 
+			print("state:", self.state, "    role:", self.role)
+			self.hrc_status = self.state + ',' + self.role
+			self.pub_hrc_status.publish(self.hrc_status)
+			self.robot_current_TCP.data = self.rtde_r.getActualTCPPose()
+			self.pub_robot_current_TCP.publish(self.robot_current_TCP)
+			robot_current_TCP_pose = kinematic.list_to_pose(self.robot_current_TCP.data)
+			self.pub_robot_current_TCP_pose.publish(robot_current_TCP_pose)
+
 			pose_goal_list = self.rtde_c.getForwardKinematics(self.release_prev_joints)
 			pose_goal = kinematic.list_to_pose(pose_goal_list)
 			self.pub_tee_goal.publish(pose_goal)
 			self.rtde_c.moveJ(self.release_prev_joints)
+
+			print("state:", self.state, "    role:", self.role)
+			self.hrc_status = self.state + ',' + self.role
+			self.pub_hrc_status.publish(self.hrc_status)
+			self.robot_current_TCP.data = self.rtde_r.getActualTCPPose()
+			self.pub_robot_current_TCP.publish(self.robot_current_TCP)
+			robot_current_TCP_pose = kinematic.list_to_pose(self.robot_current_TCP.data)
+			self.pub_robot_current_TCP_pose.publish(robot_current_TCP_pose)
 
 			pose_goal_list = self.rtde_c.getForwardKinematics(self.release_joints)
 			pose_goal = kinematic.list_to_pose(pose_goal_list)
@@ -320,6 +345,14 @@ class RobotCommander:
 			self.pub_grip_cmd.publish(cmd_release)
 			print("Robot at RELEASE")
 
+			print("state:", self.state, "    role:", self.role)
+			self.hrc_status = self.state + ',' + self.role
+			self.pub_hrc_status.publish(self.hrc_status)
+			self.robot_current_TCP.data = self.rtde_r.getActualTCPPose()
+			self.pub_robot_current_TCP.publish(self.robot_current_TCP)
+			robot_current_TCP_pose = kinematic.list_to_pose(self.robot_current_TCP.data)
+			self.pub_robot_current_TCP_pose.publish(robot_current_TCP_pose)
+
 
 			# ## RELEASE APPROACH
 			rospy.sleep(4)  # Wait until the gripper is fully open
@@ -328,8 +361,14 @@ class RobotCommander:
 			self.pub_tee_goal.publish(pose_goal)
 			self.rtde_c.moveJ(self.release_approach_joints)
 			print("Robot at release approach")
-			# else:
-			# 	sys.exit("unknown user input")
+			
+			print("state:", self.state, "    role:", self.role)
+			self.hrc_status = self.state + ',' + self.role
+			self.pub_hrc_status.publish(self.hrc_status)
+			self.robot_current_TCP.data = self.rtde_r.getActualTCPPose()
+			self.pub_robot_current_TCP.publish(self.robot_current_TCP)
+			robot_current_TCP_pose = kinematic.list_to_pose(self.robot_current_TCP.data)
+			self.pub_robot_current_TCP_pose.publish(robot_current_TCP_pose)
 
 			## GO BACK HOME
 			print("Please move arms such that role:HUMAN_LEADING and state:IDLE")
@@ -340,10 +379,27 @@ class RobotCommander:
 				self.pub_tee_goal.publish(pose_goal)
 				self.rtde_c.moveJ(self.home_approach_joints)
 
+				print("state:", self.state, "    role:", self.role)
+				self.hrc_status = self.state + ',' + self.role
+				self.pub_hrc_status.publish(self.hrc_status)
+				self.robot_current_TCP.data = self.rtde_r.getActualTCPPose()
+				self.pub_robot_current_TCP.publish(self.robot_current_TCP)
+				robot_current_TCP_pose = kinematic.list_to_pose(self.robot_current_TCP.data)
+				self.pub_robot_current_TCP_pose.publish(robot_current_TCP_pose)
+
 				pose_goal_list = self.rtde_c.getForwardKinematics(self.robot_init_joints)
 				pose_goal = kinematic.list_to_pose(pose_goal_list)
 				self.pub_tee_goal.publish(pose_goal)
 				self.rtde_c.moveJ(self.robot_init_joints)
+
+				print("state:", self.state, "    role:", self.role)
+				self.hrc_status = self.state + ',' + self.role
+				self.pub_hrc_status.publish(self.hrc_status)
+				self.robot_current_TCP.data = self.rtde_r.getActualTCPPose()
+				self.pub_robot_current_TCP.publish(self.robot_current_TCP)
+				robot_current_TCP_pose = kinematic.list_to_pose(self.robot_current_TCP.data)
+				self.pub_robot_current_TCP_pose.publish(robot_current_TCP_pose)
+
 				# rospy.sleep(5)
 				self.role = "HUMAN_LEADING"
 				self.state = "IDLE"
