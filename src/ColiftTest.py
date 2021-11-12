@@ -6,7 +6,7 @@ import time
 import numpy
 from math import radians as d2r
 from math import degrees as r2d
-from geometry_msgs.msg import TwistStamped, Twist, Vector3, Quaternion, PoseStamped, Point
+from geometry_msgs.msg import TwistStamped, Twist, Vector3, Quaternion, PoseStamped, Point, Pose
 from std_msgs.msg import Float64, Int16
 
 import sys
@@ -41,6 +41,17 @@ def cb_e1(msg):
 def cb_e2(msg):
 	global e2
 	e2 = msg.data
+
+
+def cb_elbow_left(self, msg):
+	global e1
+	e1 = msg.position.y
+
+	
+def cb_elbow_right(self, msg):
+	global e2
+	e2 = -msg.position.y
+
     
 
 
@@ -53,6 +64,9 @@ def main():
 	sub = rospy.Subscriber('/e1', Int16, cb_e1)
 	sub = rospy.Subscriber('/e2', Int16, cb_e2)
 	pub = rospy.Publisher('/ur_cmd', Vector3, queue_size=1)
+
+	sub_elbow_left = rospy.Subscriber('/elbow_left', Pose, cb_elbow_left)
+	sub_elbow_right= rospy.Subscriber('/elbow_right', Pose, cb_elbow_right)
 
 	rate = rospy.Rate(125)
 
@@ -94,15 +108,16 @@ def main():
 		elif colift_dir == 'up':
 			vector = rtde_r.getActualTCPPose()
 			selection_vector = [1, 0, 0, 0, 0, 0]
-			wrench = [-20.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+			wrench = [-30.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 			limits = [0.5, 0.1, 0.1, 0.17, 0.17, 0.17]
 		
 		print(_curr_force)
-		
-		if abs(_curr_force[1]) > 30.0:
+		print(colift_dir)
+		if abs(_curr_force[1]) > 27.0:
 			# if tcp_ori.x > 0.6:
 			# print("Side movement")
-			height_th = 100
+			# height_th = 100
+			height_th = 0.15
 			# colift_dir = ''
 			# colift_dir_past = ''
 			if((e1 > height_th) and (e2 < height_th)):

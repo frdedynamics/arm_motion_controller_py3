@@ -103,6 +103,7 @@ class RobotCommander:
 		self.pub_hrc_status = rospy.Publisher('/hrc_status', String, queue_size=1)
 		self.pub_grip_cmd = rospy.Publisher('/cmd_grip_bool', Bool, queue_size=1)
 		self.pub_robot_current_TCP = rospy.Publisher('/robot_current_TCP', Float32MultiArray, queue_size=10)
+		self.pub_robot_current_TCP_pose = rospy.Publisher('/robot_current_TCP_pose', Pose, queue_size=10)
 		self.sub_elbow_left = rospy.Subscriber('/elbow_left', Pose, self.cb_elbow_left)
 		self.sub_elbow_right= rospy.Subscriber('/elbow_right', Pose, self.cb_elbow_right)
 
@@ -159,75 +160,6 @@ class RobotCommander:
 
 
 	def cartesian_control_1_arm(self):	
-		# self.motion_hand_colift_pos_ch.x = self.motion_hand_pose.position.x - self.motion_hand_colift_init.position.x
-		# self.motion_hand_colift_pos_ch.y = self.motion_hand_pose.position.y - self.motion_hand_colift_init.position.y
-		# self.motion_hand_colift_pos_ch.z = self.motion_hand_pose.position.z - self.motion_hand_colift_init.position.z
-		# print(self.motion_hand_colift_pos_ch)
-
-		# corrected_motion_hand_pose = kinematic.q_rotate(self.human_to_robot_init_orientation, self.motion_hand_colift_pos_ch)
-		
-		# self.robot_pose[0] = self.robot_colift_init[0] + self.k * corrected_motion_hand_pose[0]
-		# self.robot_pose[1] = self.robot_colift_init[1] - self.k * corrected_motion_hand_pose[1]
-		# self.robot_pose[2] = self.robot_colift_init[2] + self.k * corrected_motion_hand_pose[2]
-		# # self.robot_pose.orientation = kinematic.q_multiply(self.robot_init.orientation, kinematic.q_multiply(self.hand_init_orientation, self.motion_hand_pose.orientation))
-		# self.robot_pose[3:] = self.robot_init[3:]
-
-
-###########################################3
-		# # TODO: any problem coming from IDLE but not from APPROACH?
-		# ''' Make force thingy here '''
-		# vector_full = self.rtde_r.getActualTCPPose()
-		# vector = vector_full # A pose vector that defines the force frame relative to the base frame.
-		# selection_vector = [1, 0, 0, 0, 0, 0] # A 6d vector of 0s and 1s. 1 means that the robot will be compliant in the corresponding axis of the task frame
-		# wrench = [10.0, 0.0, 0.0, 0.0, 0.0, 0.0] # The forces/torques the robot will apply to its environment. The robot adjusts its position along/about compliant axis in order to achieve the specified force/torque. Values have no effect for non-compliant axes
-		# type = 2 # An integer [1;3] specifying how the robot interprets the force frame. 1: The force frame is transformed in a way such that its y-axis is aligned with a vector pointing from the robot tcp towards the origin of the force frame. 2: The force frame is not transformed. 3: The force frame is transformed in a way such that its x-axis is the projection of the robot tcp velocity vector onto the x-y plane of the force frame.
-		# limits = [0.5, 0.1, 0.1, 0.17, 0.17, 0.17]# (Float) 6d vector. For compliant axes, these values are the maximum allowed tcp speed along/about the axis. For non-compliant axes, these values are the maximum allowed deviation along/about an axis between the actual tcp position and the one set by the program.
-		# self.rtde_c.forceMode(vector, selection_vector, wrench, type, limits)
-		# lift_axis = 0
-		
-		# _result = self.rtde_c.moveUntilContact([0, 0, 0.03, 0, 0, 0], [0, 0, 1, 0, 0, 0])
-		
-		# if _result:
-		# 	print("here")		
-		# 	self.do_flag += 1
-		# 	print(self.do_flag)			
-
-		# if self.do_flag == 2:
-		# 	print("do it")
-		# 	while self.state == 'HRC/colift':
-		# 		# get desired axis
-		# 		left, right = self.call_hand_calib_server()
-		# 		# TODO: check if x is the correct axis for the side motion
-		# 		# TODO: check if 0.4 TH is enough or too much
-		# 		if(self.left_hand_pose.position.x > 0.4):
-		# 			wrench = [5.0, 0.0, 0.0]
-		# 			limits = [500, 0, 0, 0, 0, 0]
-		# 		elif(self.left_hand_pose.position.x < -0.4):
-		# 			wrench = [-5.0, 0.0, 0.0]
-		# 			limits = [500, 0, 0, 0, 0, 0]
-		# 		else:
-		# 			wrench = [0.0, 0.0, 0.0] # complient in all axes
-		# 			limits = [500, 500, 500, 0, 0, 0]
-		# 		# set force to that axis
-		# 		self.rtde_c.forceMode(vector, selection_vector, wrench, type, limits)
-		# 		# check if still in colift
-		# 		if(self.right_hand_pose.position.x < -0.25 and self.right_hand_pose.position.z < -0.15):
-		# 			self.rtde_c.forceModeStop()
-		# 			self.state = 'HRC/release'
-		# 			self.do_flag = 0
-		# 		elif(self.right_hand_pose.orientation.w > 0.707 and self.right_hand_pose.orientation.x < 0.707):
-		# 			self.rtde_c.forceModeStop()
-		# 			self.state = 'HRC/idle'
-		# 			self.do_flag = 0	
-		# 			self.hrc_idle(from_colift=True)
-		# 		else:
-		# 			self.state = 'HRC/colift'
-		# self.robot_pose = self.rtde_c.getTargetWaypoint()
-		# # bool = self.rtde_c.isSteady()
-		# # std::vector<double> = self.rtde_r.getActualToolAccelerometer()
-#################################
-
-# TODO: any problem coming from IDLE but not from APPROACH?
 		''' Make force thingy here '''
 		vector = self.rtde_r.getActualTCPPose() # A pose vector that defines the force frame relative to the base frame.
 		selection_vector = [0, 0, 0, 0, 0, 0] # A 6d vector of 0s and 1s. 1 means that the robot will be compliant in the corresponding axis of the task frame
@@ -242,35 +174,37 @@ class RobotCommander:
 			print(self.state)
 			vector = self.rtde_r.getActualTCPPose()
 			selection_vector = [0, 1, 0, 0, 0, 0] 
-			wrench = [0.0, 10.0, 0.0, 0.0, 0.0, 0.0]
+			wrench = [0.0, 30.0, 0.0, 0.0, 0.0, 0.0]
 			limits = [0.1, 0.5, 0.1, 0.17, 0.17, 0.17]
 
 		elif self.colift_dir == 'left':
 			print(self.state)
 			vector = self.rtde_r.getActualTCPPose()
 			selection_vector = [0, 1, 0, 0, 0, 0]
-			wrench = [0.0, -10.0, 0.0, 0.0, 0.0, 0.0]
+			wrench = [0.0, -30.0, 0.0, 0.0, 0.0, 0.0]
 			limits = [0.1, 0.5, 0.1, 0.17, 0.17, 0.17]
 
 		elif self.colift_dir == 'up':
 			print(self.state)
 			vector = self.rtde_r.getActualTCPPose()
 			selection_vector = [1, 0, 0, 0, 0, 0]
-			wrench = [-10.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+			wrench = [-30.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 			limits = [0.5, 0.1, 0.1, 0.17, 0.17, 0.17]
 		
-		print(_curr_force)
+		print(_curr_force[1])
 		
-		if abs(_curr_force[2]) > 2.0:
+		if abs(_curr_force[1]) > 27.0:
 		# if self.tcp_ori.x > 0.6:
 			print("Side movement")
-			height_th = 0.15
+			height_th = 0.2
 			# colift_dir = ''
 			# colift_dir_past = ''
 			if((self.elbow_right_height > height_th) and (self.elbow_left_height < height_th)):
 				self.colift_dir = 'right'
 			elif((self.elbow_left_height > height_th) and (self.elbow_right_height < height_th)):
 				self.colift_dir = 'left'
+			elif((self.elbow_left_height > height_th) and (self.elbow_right_height > height_th)):
+				self.colift_dir = 'up'
 			else:
 				if not self.colift_flag:
 					self.colift_flag = True
@@ -279,6 +213,7 @@ class RobotCommander:
 				
 		# check if still in colift
 		if(self.steering_hand_pose.position.x < -0.25 and self.steering_hand_pose.position.z < -0.15):
+			self.rtde_c.servoStop()
 			self.rtde_c.forceModeStop()
 			self.state = "RELEASE"
 			print('HRC/release')
@@ -288,7 +223,7 @@ class RobotCommander:
 			self.state = "IDLE"
 			print('HRC/idle')
 			# self.hrc_idle(from_colift=True)
-		elif(self.hand_grip_strength.data < 150):
+		elif(self.hand_grip_strength.data < 100):
 			self.state = "APPROACH"
 		else:
 			self.state = "CO-LIFT"
@@ -296,8 +231,8 @@ class RobotCommander:
 		# bool = self.rtde_c.isSteady()
 		# std::vector<double> = self.rtde_r.getActualToolAccelerometer()
 		print(self.colift_dir)
-		print("self.elbow_right_height, self.elbow_left_height"	)
-		print(self.elbow_right_height, self.elbow_left_height)
+		print("self.elbow_left_height, self.elbow_right_height"	)
+		print(self.elbow_left_height, self.elbow_right_height)
 		self.rtde_c.forceMode(vector, selection_vector, wrench, type, limits)
 
 
@@ -309,6 +244,7 @@ class RobotCommander:
 				# print("self.steering_hand_pose.position.x", self.steering_hand_pose.position.x)
 				# print(" self.steering_hand_pose.position.z",  self.steering_hand_pose.position.z)
 				if(self.steering_hand_pose.position.x < -0.25 and self.steering_hand_pose.position.z < -0.15):
+					self.rtde_c.servoStop()
 					self.rtde_c.forceModeStop()
 					self.state = "RELEASE"
 				else:
@@ -334,7 +270,7 @@ class RobotCommander:
 					# check grip here
 					# print "motion:", self.motion_hand_pose.position, "hands:", self.target_pose.position
 					# print("self.hand_grip_strength.data:", self.hand_grip_strength.data)
-					if(self.hand_grip_strength.data > 150):
+					if(self.hand_grip_strength.data > 100):
 						prev_state = self.state
 						self.state = "CO-LIFT"
 						if prev_state != "CO-LIFT":
@@ -362,10 +298,9 @@ class RobotCommander:
 
 		else:
 			## RELEASE (or PLACE)
-			# user_input = input("Move to RELEASE pose?")
-			# if user_input == 'y':
 			print("Moving to RELEASE pose")
 			self.rtde_c.servoStop()
+			self.rtde_c.forceModeStop()
 			pose_goal_list = self.rtde_c.getForwardKinematics(self.home_approach_joints)
 			pose_goal = kinematic.list_to_pose(pose_goal_list)
 			self.pub_tee_goal.publish(pose_goal)
@@ -384,16 +319,10 @@ class RobotCommander:
 			cmd_release = False
 			self.pub_grip_cmd.publish(cmd_release)
 			print("Robot at RELEASE")
-			# else:
-			# 	sys.exit("Release undemanded")
-			# Gripper_release()
-			# else:
-			# 	sys.exit("unknown user input")
+
 
 			# ## RELEASE APPROACH
 			rospy.sleep(4)  # Wait until the gripper is fully open
-			# user_input = raw_input("Move to RELEASE APPROACH pose?")
-			# if user_input == 'y':
 			pose_goal_list = self.rtde_c.getForwardKinematics(self.release_approach_joints)
 			pose_goal = kinematic.list_to_pose(pose_goal_list)
 			self.pub_tee_goal.publish(pose_goal)
@@ -403,8 +332,6 @@ class RobotCommander:
 			# 	sys.exit("unknown user input")
 
 			## GO BACK HOME
-			# user_input = raw_input("Move to INIT/HOME pose?")
-			# if user_input == 'y':
 			print("Please move arms such that role:HUMAN_LEADING and state:IDLE")
 			user_input = input("Ready to new cycle?")
 			if user_input == 'y':
@@ -426,4 +353,6 @@ class RobotCommander:
 		self.pub_hrc_status.publish(self.hrc_status)
 		self.robot_current_TCP.data = self.rtde_r.getActualTCPPose()
 		self.pub_robot_current_TCP.publish(self.robot_current_TCP)
+		robot_current_TCP_pose = kinematic.list_to_pose(self.robot_current_TCP.data)
+		self.pub_robot_current_TCP_pose.publish(robot_current_TCP_pose)
 		self.r.sleep()
