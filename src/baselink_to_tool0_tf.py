@@ -24,9 +24,9 @@ if __name__ == '__main__':
     pub_tool = rospy.Publisher('/base_to_tool', Pose, queue_size=10)
     pub_tool_corr = rospy.Publisher('/base_to_tool_corrected', Pose, queue_size=10)
     rospy.init_node('base_to_tool_tf_node')
-    tfBuffer = tf2_ros.Buffer()
+    tfBuffer = tf2_ros.Buffer(cache_time=rospy.Duration(20000))
     listener = tf2_ros.TransformListener(tfBuffer)
-    rate = rospy.Rate(10000.0)
+    rate = rospy.Rate(10.0)
     print("Publishing tool actual pose (From robot, not calculated)")
 
     br = tf.TransformBroadcaster()
@@ -47,8 +47,8 @@ if __name__ == '__main__':
             rate.sleep()
             continue
 
-        # print "Translation:", trans.transform.translation
-        # print "Rotation:", trans.transform.rotation
+        print("Translation:", trans_tool0.transform.translation)
+        print("Rotation:", trans_tool0.transform.rotation)
         tool0_actual_pose.position = trans_tool0.transform.translation
         tool0_actual_pose.orientation = trans_tool0.transform.rotation
         pub_tool.publish(tool0_actual_pose)
@@ -56,6 +56,7 @@ if __name__ == '__main__':
         tool0_corrected_pose.position = trans_tool0_corr.transform.translation
         tool0_corrected_pose.orientation = trans_tool0_corr.transform.rotation
         pub_tool_corr.publish(tool0_corrected_pose)
+        print(tool0_corrected_pose)
 
         rate.sleep()
 

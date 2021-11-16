@@ -82,6 +82,8 @@ class RobotCommander:
 
 		self.elbow_left_height = 0.0
 		self.elbow_right_height = 0.0
+		self.force_human = Float64()
+		self.force_mode = String()
 
 		self.colift_dir = 'up'
 		self.colift_flag = False
@@ -102,6 +104,10 @@ class RobotCommander:
 		self.pub_tee_goal = rospy.Publisher('/Tee_goal_pose', Pose, queue_size=1)
 		self.pub_hrc_status = rospy.Publisher('/hrc_status', String, queue_size=1)
 		self.pub_grip_cmd = rospy.Publisher('/cmd_grip_bool', Bool, queue_size=1)
+
+		self.pub_force_human = rospy.Publisher('/human_force', Float64, queue_size=1)
+		self.pub_force_mode = rospy.Publisher('/force_mode', String, queue_size=1)
+
 		self.pub_robot_current_TCP = rospy.Publisher('/robot_current_TCP', Float32MultiArray, queue_size=10)
 		self.pub_robot_current_TCP_pose = rospy.Publisher('/robot_current_TCP_pose', Pose, queue_size=10)
 		self.sub_elbow_left = rospy.Subscriber('/elbow_left', Pose, self.cb_elbow_left)
@@ -188,7 +194,7 @@ class RobotCommander:
 			print(self.state)
 			vector = self.rtde_r.getActualTCPPose()
 			selection_vector = [1, 0, 0, 0, 0, 0]
-			wrench = [-30.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+			wrench = [-40.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 			limits = [0.5, 0.1, 0.1, 0.17, 0.17, 0.17]
 		
 		print(_curr_force[1])
@@ -231,8 +237,12 @@ class RobotCommander:
 		# bool = self.rtde_c.isSteady()
 		# std::vector<double> = self.rtde_r.getActualToolAccelerometer()
 		print(self.colift_dir)
-		print("self.elbow_left_height, self.elbow_right_height"	)
+		print("self.elbow_left_height, self.elbow_right_height")
 		print(self.elbow_left_height, self.elbow_right_height)
+		self.force_human.data = _curr_force[1]
+		self.force_mode.data = self.colift_dir
+		self.pub_force_human.publish(self.force_human)
+		self.pub_force_mode.publish(self.force_mode)
 		self.rtde_c.forceMode(vector, selection_vector, wrench, type, limits)
 
 

@@ -18,8 +18,8 @@ from datetime import datetime
 
 # OUTPUT_FOLDER = "../Output"  # take it as a rosparam
 # OUTPUT_FOLDER = "/home/gizem/Documents/Gitkraken/arm-paper/DataOutput"  # take it as a rosparam
-OUTPUT_FOLDER = "/home/gizem/Insync/giat@hvl.no/Onedrive/TAROS2-media/openrave-perfect-log"  # take it as a rosparam
-OUTPUT_FILENAME_PREFIX = "openrave-perfect"
+OUTPUT_FOLDER = "/home/gizem/Insync/giat@hvl.no/Onedrive/TAROS2-media/perfect-without-directions-log"  # take it as a rosparam
+OUTPUT_FILENAME_PREFIX = "perfect-without-directions"
 
 
 DATA_LABELS = ('ID_ELAPSED_TIME',
@@ -28,8 +28,12 @@ DATA_LABELS = ('ID_ELAPSED_TIME',
 				'ID_HAND',
 				'ID_TGOAL',
 				'ID_TACTUAL',
-                'ID_TACTUAL_CORRECTED',
                 'ID_STATUS',
+                'ID_FORCE_MODE',
+                'ID_FORCE_HUMAN',
+                'ID_LELBOW',
+                'ID_RELBOW',
+                'ID_CURRENT_TCP_POSE',
                 'ID_TABLE_ACC',
                 'ID_TABLE_ANGLE')
 

@@ -10,7 +10,7 @@ This is a data_logger class. Subscribes the IMU readings and save them into a CS
 from queue import Queue, Empty
 import threading
 import csv
-import data_openrave
+import Data.data_openrave as data
 
 
 # Private Globals
@@ -30,8 +30,9 @@ def log_metrics(time, lhand_pose, rhand_pose, hand_pose, tgoal_pose, tactual_pos
         tactual_pose_arr = [tactual_pose.position.x, tactual_pose.position.y, tactual_pose.position.z, tactual_pose.orientation.x, tactual_pose.orientation.y, tactual_pose.orientation.z, tactual_pose.orientation.w]
         tcorrected_pose_arr = [tcorrected.position.x, tcorrected.position.y, tcorrected.position.z, tcorrected.orientation.x, tcorrected.orientation.y, tcorrected.orientation.z, tcorrected.orientation.w]
         status_string = status.data
-        table_angle_arr = [table_angle.x, table_angle.y, table_angle.z]
         table_acc_arr = [table_acc.x, table_acc.y, table_acc.z]
+        table_angle_arr = [table_angle.x, table_angle.y, table_angle.z]
+        
         
         new_data = [time, lhand_pose_arr, rhand_pose_arr, hand_pose_arr, tgoal_pose_arr, tactual_pose_arr, tcorrected_pose_arr, status_string, table_acc_arr, table_angle_arr]
         _DATA.put(new_data)
@@ -46,7 +47,7 @@ def enable_logging():
     _logging_enabled = True
     _DATA_LOGGER = DataLogger()  # thread here
     _DATA_LOGGER.start() ## start thread not start() module of your logger.
-    print "enable_logging"
+    print("enable_logging")
 
 
 def disable_logging():
@@ -55,7 +56,7 @@ def disable_logging():
         if _DATA_LOGGER.running:
             _DATA_LOGGER.stop()
         _logging_enabled = False
-        print "disable_logging"
+        print("disable_logging")
 
 
 class DataLogger(threading.Thread):
@@ -66,7 +67,7 @@ class DataLogger(threading.Thread):
         self.fp = open(self.filename, 'w')
         self.writer = csv.writer(self.fp, lineterminator='\n')
         # write the header of the CSV file (the labels of each field/feature)
-        print "labels:", data.DATA_LABELS
+        print("labels:", data.DATA_LABELS)
         self.writer.writerow(data.DATA_LABELS)
         self.running = True
 
@@ -74,7 +75,7 @@ class DataLogger(threading.Thread):
         while self.running:
             try:
                 row = _DATA.get(timeout=1)
-                print "data:", row
+                print("data:", row)
                 self.writer.writerow(row)
             except Empty:
                 continue

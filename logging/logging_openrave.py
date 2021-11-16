@@ -10,6 +10,7 @@ from geometry_msgs.msg import Pose
 from geometry_msgs.msg import Vector3
 from nav_msgs.msg import Odometry
 from std_msgs.msg import Float32, String
+from sensor_msgs.msg import Imu
 
 # from get_model_gazebo_pose import GazeboModel
 
@@ -20,6 +21,7 @@ tgoal_pose = Pose()
 tactual_pose = Pose()
 tactual_corrected_pose = Pose()
 status = String()
+table_imu = Imu()
 table_acc = Vector3()
 table_angle = Vector3()
 
@@ -60,9 +62,9 @@ def callback_hrc_status(msg):
 	global status
 	status = msg	
 
-def callback_table_acceleration(msg):
-    global table_acc
-    table_acc = msg
+def callback_table_imu(msg):
+    global table_acc,table_imu
+    table_acc = msg.linear_acceleration
 
 def callback_table_angle(msg):
     global table_angle
@@ -71,7 +73,7 @@ def callback_table_angle(msg):
 	
 
 if __name__ == "__main__":
-	global lhand_pose, rhand_pose, hand_pose, tgoal_pose, tactual_pose, tactual_corrected_pose, table_acc, table_angle
+	# global lhand_pose, rhand_pose, hand_pose, tgoal_pose, tactual_pose, tactual_corrected_pose, table_acc, table_angle
 	try:
 		rospy.init_node('data_logger_node')
 		start_time = time.time()
@@ -86,7 +88,7 @@ if __name__ == "__main__":
 		sub_tool_actual_pose = rospy.Subscriber('/base_to_tool', Pose, callback_tool_actual_pose) # /base_link to /tool0 TF
 		sub_tool_actual_pose = rospy.Subscriber('/base_to_tool_corrected', Pose, callback_tool_corrected_pose) # /base_link to /tool0 TF
 		sub_hrc_status = rospy.Subscriber('/hrc_status', String, callback_hrc_status) 
-		sub_table_acc = rospy.Subscriber('sensor_l_wrist', Vector3, callback_table_acceleration) 
+		sub_table_acc = rospy.Subscriber('sensor_l_wrist', Imu, callback_table_imu) 
 		sub_table_angle = rospy.Subscriber('sensor_l_wrist_rpy', Vector3, callback_table_angle) 
 		# or sub_tool_actual_pose = rospy.Subscriber('/Tee_calculated', Pose, callback_hand_pose) # /world to /tool0 TF
 		# sub_tool_pose = rospy.Subscriber('/odom_wrist_3_link', Odometry, callback_tool_pose) ## Check this if it is the same as wrist_3_link.
@@ -98,5 +100,5 @@ if __name__ == "__main__":
 			rate.sleep()
 	except KeyboardInterrupt:
 		data_logger.disable_logging()
-        rospy.signal_shutdown("KeyboardInterrupt")
-        raise
+		rospy.signal_shutdown("KeyboardInterrupt")
+		raise
