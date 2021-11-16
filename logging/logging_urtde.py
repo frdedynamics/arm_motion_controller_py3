@@ -102,7 +102,7 @@ if __name__ == "__main__":
 
 		sub_lhand_pose = rospy.Subscriber('/wrist_left', Pose, callback_lhand_pose)
 		sub_rhand_pose = rospy.Subscriber('/wrist_right', Pose, callback_rhand_pose)
-		sub_hand_pose = rospy.Subscriber('/motion_hand_pose', Pose, callback_hand_pose)
+		sub_hand_pose = rospy.Subscriber('/merged_hands', Pose, callback_hand_pose)
 		sub_tool_goal_pose = rospy.Subscriber('/Tee_goal_pose', Pose, callback_tool_goal_pose)
 		sub_tool_actual_pose = rospy.Subscriber('/base_to_tool', Pose, callback_tool_actual_pose) # /base_link to /tool0 TF
 		sub_hrc_status = rospy.Subscriber('/hrc_status', String, callback_hrc_status) 
