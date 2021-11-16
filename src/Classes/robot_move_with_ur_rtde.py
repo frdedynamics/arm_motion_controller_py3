@@ -331,6 +331,9 @@ class RobotCommander:
 			self.rtde_c.forceModeStop()
 			pose_goal_list = self.rtde_c.getForwardKinematics(self.home_approach_joints)
 			pose_goal = kinematic.list_to_pose(pose_goal_list)
+			pose_goal.position.x = -pose_goal.position.x
+			pose_goal.position.y = -pose_goal.position.y
+			pose_goal.position.z = -pose_goal.position.z
 			self.pub_tee_goal.publish(pose_goal)
 			self.rtde_c.moveJ(self.home_approach_joints)
 
@@ -344,6 +347,9 @@ class RobotCommander:
 
 			pose_goal_list = self.rtde_c.getForwardKinematics(self.release_prev_joints)
 			pose_goal = kinematic.list_to_pose(pose_goal_list)
+			pose_goal.position.x = -pose_goal.position.x
+			pose_goal.position.y = -pose_goal.position.y
+			pose_goal.position.z = -pose_goal.position.z
 			self.pub_tee_goal.publish(pose_goal)
 			self.rtde_c.moveJ(self.release_prev_joints)
 
@@ -357,6 +363,9 @@ class RobotCommander:
 
 			pose_goal_list = self.rtde_c.getForwardKinematics(self.release_joints)
 			pose_goal = kinematic.list_to_pose(pose_goal_list)
+			pose_goal.position.x = -pose_goal.position.x
+			pose_goal.position.y = -pose_goal.position.y
+			pose_goal.position.z = -pose_goal.position.z
 			self.pub_tee_goal.publish(pose_goal)
 			self.rtde_c.moveJ(self.release_joints)
 			cmd_release = Bool()
@@ -377,6 +386,9 @@ class RobotCommander:
 			rospy.sleep(4)  # Wait until the gripper is fully open
 			pose_goal_list = self.rtde_c.getForwardKinematics(self.release_approach_joints)
 			pose_goal = kinematic.list_to_pose(pose_goal_list)
+			pose_goal.position.x = -pose_goal.position.x
+			pose_goal.position.y = -pose_goal.position.y
+			pose_goal.position.z = -pose_goal.position.z
 			self.pub_tee_goal.publish(pose_goal)
 			self.rtde_c.moveJ(self.release_approach_joints)
 			print("Robot at release approach")
@@ -395,6 +407,9 @@ class RobotCommander:
 			if user_input == 'y':
 				pose_goal_list = self.rtde_c.getForwardKinematics(self.home_approach_joints)
 				pose_goal = kinematic.list_to_pose(pose_goal_list)
+				pose_goal.position.x = -pose_goal.position.x
+				pose_goal.position.y = -pose_goal.position.y
+				pose_goal.position.z = -pose_goal.position.z
 				self.pub_tee_goal.publish(pose_goal)
 				self.rtde_c.moveJ(self.home_approach_joints)
 
@@ -408,6 +423,9 @@ class RobotCommander:
 
 				pose_goal_list = self.rtde_c.getForwardKinematics(self.robot_init_joints)
 				pose_goal = kinematic.list_to_pose(pose_goal_list)
+				pose_goal.position.x = -pose_goal.position.x
+				pose_goal.position.y = -pose_goal.position.y
+				pose_goal.position.z = -pose_goal.position.z
 				self.pub_tee_goal.publish(pose_goal)
 				self.rtde_c.moveJ(self.robot_init_joints)
 
