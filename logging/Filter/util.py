@@ -124,7 +124,7 @@ def plot_lines(data, fs, title):
         ax.plot(index, data[:,i], color_map[i], label=labels[i])
     ax.set_xlim([0,num_rows/fs])
     ax.set_xlabel('Time [sec]')
-    ax.set_title('Time domain: '+title)
+    # ax.set_title('Time domain: '+title)
     ax.legend()
 
 def acc_integration(data):
@@ -138,13 +138,13 @@ def plot3D(data, title):
 	fig=plt.figure()
 	ax=fig.add_subplot(111, projection='3d')
 	ax.plot(xs=data[:,0], ys=data[:,1], zs=data[:,2], zdir='z')
-	ax.set_title(title)
+	# ax.set_title(title)
 
 def plot_subplot(data, title, hold=True, dt=0.01, ylim=None):
     num_rows, num_cols=data.shape
     index=np.arange(0,num_rows/(1/dt),dt)
     fig, ax = plt.subplots()
-    fig.suptitle(title)
+    # fig.suptitle(title)
     labels=['x','y','z','w']
     color_map=['r', 'g', 'b', 'y']
     # color_map=['r', 'w', 'w']
@@ -153,7 +153,8 @@ def plot_subplot(data, title, hold=True, dt=0.01, ylim=None):
     ax.set_xlim([0,num_rows/(1/dt)-dt])
     ax.set_ylim(ylim)
     ax.set_xlabel('Time [sec]')
-    ax.set_title('Time domain: '+title)
+    # ax.set_title('Time domain: '+title)
+    ax.set_title(title)
     ax.legend()
     # plt.hold(hold)
 

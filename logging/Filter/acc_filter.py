@@ -37,10 +37,10 @@ def test_data(file_name):
 	# plot3D(median_data, 'median filter')
 	# plot3D(lpf_data, 'low pass filter')
 	# plot3D(comb_data, 'median+low pass filter')
-	plot_subplot(data, 'raw data')
-	plot_subplot(median_data, 'median filter')
-	plot_subplot(lpf_data, 'low pass filter')
-	plot_subplot(comb_data, 'median+low pass filter')
+	plot_subplot(data, 'Raw data')
+	# plot_subplot(median_data, 'Median filter')
+	# plot_subplot(lpf_data, 'Low pass filter')
+	plot_subplot(comb_data, 'Median + Lowpass Filter')
 	plt.show()
 
 if __name__ == '__main__':
