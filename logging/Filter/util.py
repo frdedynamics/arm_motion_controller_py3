@@ -123,6 +123,7 @@ def plot_lines(data, fs, title):
     for i in range(num_cols):
         ax.plot(index, data[:,i], color_map[i], label=labels[i])
     ax.set_xlim([0,num_rows/fs])
+    # ax.set_ylim([-5,20])
     ax.set_xlabel('Time [sec]')
     # ax.set_title('Time domain: '+title)
     ax.legend()
@@ -151,7 +152,7 @@ def plot_subplot(data, title, hold=True, dt=0.01, ylim=None):
     for i in range(num_cols):
         ax.plot(index, data[:,i], color_map[i], label=labels[i])
     ax.set_xlim([0,num_rows/(1/dt)-dt])
-    ax.set_ylim(ylim)
+    ax.set_ylim([-5,20])
     ax.set_xlabel('Time [sec]')
     # ax.set_title('Time domain: '+title)
     ax.set_title(title)
