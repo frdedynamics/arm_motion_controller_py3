@@ -119,12 +119,15 @@ def plot_lines(data, fs, title):
     fig, ax=plt.subplots()
     labels=['x','y','z']
     color_map=['r', 'g', 'b']
+    marker=['<', 'D', '^']
     index=np.arange(num_rows)/fs
     for i in range(num_cols):
-        ax.plot(index, data[:,i], color_map[i], label=labels[i])
+        ax.plot(index, data[:,i], color_map[i], label=labels[i], marker=marker[i], markevery=300, markersize=4)
     ax.set_xlim([0,num_rows/fs])
     # ax.set_ylim([-5,20])
+    ax.set_ylim([-20,10])
     ax.set_xlabel('Time [sec]')
+    ax.set_title(title)
     # ax.set_title('Time domain: '+title)
     ax.legend()
 
@@ -148,9 +151,10 @@ def plot_subplot(data, title, hold=True, dt=0.01, ylim=None):
     # fig.suptitle(title)
     labels=['x','y','z','w']
     color_map=['r', 'g', 'b', 'y']
+    marker=['<', 'D', '^']
     # color_map=['r', 'w', 'w']
     for i in range(num_cols):
-        ax.plot(index, data[:,i], color_map[i], label=labels[i])
+        ax.plot(index, data[:,i], color_map[i], label=labels[i], marker=marker[i], markevery=300, markersize=4)
     ax.set_xlim([0,num_rows/(1/dt)-dt])
     ax.set_ylim([-5,20])
     ax.set_xlabel('Time [sec]')
