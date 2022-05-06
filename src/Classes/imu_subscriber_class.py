@@ -59,9 +59,8 @@ class IMUsubscriber:
         self.human_joint_imu = JointState()
         self.human_joint_imu.name = [ 'spine_0', 'spine_1', 'spine_2',
                                       'left_shoulder_0', 'left_shoulder_1', 'left_shoulder_2', 'left_elbow_0', 'left_elbow_2',
-                                      'right_shoulder_0', 'right_shoulder_1', 'right_shoulder_2', 'right_elbow_0', 'right_elbow_2',
-                                      'left_wrist_0', 'left_wrist_1', 'left_wrist_2']
-        self.human_joint_imu.position = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+                                      'right_shoulder_0', 'right_shoulder_1', 'right_shoulder_2', 'right_elbow_0', 'right_elbow_2']
+        self.human_joint_imu.position = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.motion_wrist_ori = Vector3()
         self.calibration_flag = 0
         self.runflag = False
