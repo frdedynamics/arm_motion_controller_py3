@@ -42,7 +42,7 @@ if __name__ == '__main__':
     pub_steering_pose = rospy.Publisher('/steering_hand_pose', Pose, queue_size=10)
     sub_l_wrist = rospy.Subscriber('/wrist_left', Pose, cb_l_wrist)
     sub_r_wrist = rospy.Subscriber('/wrist_right', Pose, cb_r_wrist)
-    rospy.init_node('wrist_to_robot_2arms')
+    rospy.init_node('wrist_to_robot_2arms', anonymous=False)
     rate = rospy.Rate(100.0)
     print("wrist_to_robot_2arms node started")
 
