@@ -19,7 +19,7 @@ from tf.transformations import euler_from_matrix as m2e
 sys.path.append('/home/gizem/catkin_ws/src/my_human_pkg/src/Classes')
 from . import Kinematics_with_Quaternions as kinematic
 
-_CALIBRATION_TH = 20
+_CALIBRATION_TH = 30
 _ROSTIME_START = 0
 prev = 0
 now = 0
@@ -29,7 +29,7 @@ class IMUsubscriber:
         """Initializes the IMU data recording node."""
 
         if start_node == True:
-            rospy.init_node("imu_subscriber_2arms")
+            rospy.init_node("imu_subscriber_2arms", anonymous=False)
             self.r = rospy.Rate(rate)
 
         self.q_chest_init = Quaternion(0, 0, 0, 1.0)
