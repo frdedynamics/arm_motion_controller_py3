@@ -19,7 +19,7 @@ def cb_emg(msg):
 
 
 if __name__ == '__main__':
-    rospy.init_node('emg_to_gripper', anonymous=True)
+    rospy.init_node('emg_to_gripper', anonymous=False)
     sub_emg = rospy.Subscriber('/myo_raw/myo_emg', EmgArray, cb_emg)
     pub_emg_sum = rospy.Publisher('/emg_sum', Int64, queue_size=1)
     pub_gripper = rospy.Publisher('/cmd_grip_bool', Bool, queue_size=1)

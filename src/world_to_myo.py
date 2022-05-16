@@ -21,6 +21,6 @@ def handle_myo_pose(msg):
     br.sendTransform(t)
 
 if __name__ == '__main__':
-    rospy.init_node('tf2_myo_broadcaster')
+    rospy.init_node('tf2_myo_broadcaster', anonymous=False)
     rospy.Subscriber('/myo_raw/pose', PoseStamped, handle_myo_pose)
     rospy.spin()
