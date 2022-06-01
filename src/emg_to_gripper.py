@@ -28,9 +28,9 @@ if __name__ == '__main__':
 
     try:
         emg_sum_th = rospy.get_param("/emg_sum_th")
-        print(emg_sum_th)
+        print("emg_sum_th parameter set:",emg_sum_th)
     except:
-        print("no parameter set")
+        print("no emg_sum_th parameter set")
 
     while not rospy.is_shutdown():
         try:

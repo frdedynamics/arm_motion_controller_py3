@@ -19,6 +19,8 @@ from . import Kinematics_with_Quaternions as kinematic
 from rtde_control import RTDEControlInterface as RTDEControl
 import rtde_receive
 
+elbow_height_th = 0.2
+
 
 class RobotCommander:
 	def __init__(self, rate=100, start_node=False, s=1.0, k=1.0):
@@ -98,6 +100,7 @@ class RobotCommander:
                
 
 	def init_subscribers_and_publishers(self):
+		global elbow_height_th
 		self.sub_hand_grip_strength = rospy.Subscriber('/robotiq_grip_gap', Int16, self.cb_hand_grip_strength)
 		self.sub_motion_hand_pose = rospy.Subscriber('/motion_hand_pose', Pose, self.cb_motion_hand_pose)
 		self.sub_steering_pose = rospy.Subscriber('/steering_hand_pose', Pose, self.cb_steering_pose)
@@ -115,6 +118,13 @@ class RobotCommander:
 		self.pub_robot_current_TCP_pose = rospy.Publisher('/robot_current_TCP_pose', Pose, queue_size=10)
 		self.sub_elbow_left = rospy.Subscriber('/elbow_left', Pose, self.cb_elbow_left)
 		self.sub_elbow_right= rospy.Subscriber('/elbow_right', Pose, self.cb_elbow_right)
+
+		try:
+			elbow_height_th = rospy.get_param("/elbow_height_th")
+			print("elbow_height_th parameter set:", elbow_height_th)
+		except:
+			print("no elbow height parameter set")
+		
 
 	
 	def cb_elbow_left(self, msg):
@@ -211,14 +221,14 @@ class RobotCommander:
 		if abs(_curr_force[1]) > 27.0:
 		# if self.tcp_ori.x > 0.6:
 			print("Side movement")
-			height_th = 0.2
+			elbow_height_th = 0.2
 			# colift_dir = ''
 			# colift_dir_past = ''
-			if((self.elbow_right_height > height_th) and (self.elbow_left_height < height_th)):
+			if((self.elbow_right_height > elbow_height_th) and (self.elbow_left_height < elbow_height_th)):
 				self.colift_dir = 'right'
-			elif((self.elbow_left_height > height_th) and (self.elbow_right_height < height_th)):
+			elif((self.elbow_left_height > elbow_height_th) and (self.elbow_right_height < elbow_height_th)):
 				self.colift_dir = 'left'
-			elif((self.elbow_left_height > height_th) and (self.elbow_right_height > height_th)):
+			elif((self.elbow_left_height > elbow_height_th) and (self.elbow_right_height > elbow_height_th)):
 				self.colift_dir = 'up'
 			else:
 				if not self.colift_flag:
