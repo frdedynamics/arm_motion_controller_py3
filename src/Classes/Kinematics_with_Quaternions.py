@@ -172,6 +172,17 @@ def q_tf_convert(q):
     q_converted[3] = q.w
     return q_converted
 
+def tf_q_convert(q):
+    '''
+    Convert numpy array into geometry_msgs.Quaternion objects for pose publish
+    '''
+    q_converted = Quaternion()
+    q_converted.x = q[0]
+    q_converted.y = q[1]
+    q_converted.z = q[2]
+    q_converted.w = q[3]
+    return q_converted
+
 def pose_to_list(p):
     '''
     Convert Pose(Point, Quaternion) object as [x,y,z,Rx,Ry,Rz]
