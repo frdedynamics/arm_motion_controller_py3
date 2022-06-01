@@ -5,13 +5,14 @@ This node controls Robotiq gripper with ON/OFF commands via Myo Armband EMG data
 The EMG data is processed poorly so they are not reliable. Therefore, it works only as ON/OFF commands
 The delay looks like inevitable if we want to process EMG data propely: https://www.youtube.com/watch?v=EnY56VFmAYY
 '''
-import rospy
+import rospy, sys
 from std_msgs.msg import Int64, Bool
 from ros_myo.msg import EmgArray
 
 # emg_data = []  ## change a numpy array if sum is too slow
 emg_sum = 0 
 gripper_open = True
+emg_sum_th = 3000
 
 def cb_emg(msg):
     global emg_sum
@@ -25,11 +26,17 @@ if __name__ == '__main__':
     pub_gripper = rospy.Publisher('/cmd_grip_bool', Bool, queue_size=1)
     rate = rospy.Rate(2.0)
 
+    try:
+        emg_sum_th = rospy.get_param("/emg_sum_th")
+        print(emg_sum_th)
+    except:
+        print("no parameter set")
+
     while not rospy.is_shutdown():
         try:
             pub_emg_sum.publish(emg_sum)  
-            print(emg_sum)
-            if not emg_sum < 3000:
+            # print(emg_sum)            
+            if not emg_sum < emg_sum_th:
                 if gripper_open:
                     gripper_open =  False
                     pub_gripper.publish(gripper_open)
