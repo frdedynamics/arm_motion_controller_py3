@@ -220,21 +220,26 @@ class RobotCommander:
 		
 		if abs(_curr_force[1]) > 27.0:
 		# if self.tcp_ori.x > 0.6:
-			print("Side movement")
-			elbow_height_th = 0.2
-			# colift_dir = ''
-			# colift_dir_past = ''
-			if((self.elbow_right_height > elbow_height_th) and (self.elbow_left_height < elbow_height_th)):
-				self.colift_dir = 'right'
-			elif((self.elbow_left_height > elbow_height_th) and (self.elbow_right_height < elbow_height_th)):
-				self.colift_dir = 'left'
-			elif((self.elbow_left_height > elbow_height_th) and (self.elbow_right_height > elbow_height_th)):
-				self.colift_dir = 'up'
+			if self.colift_dir == 'null':
+				# colift_dir = ''
+				# colift_dir_past = ''
+				if((self.elbow_right_height > elbow_height_th) and (self.elbow_left_height < elbow_height_th)):
+					self.colift_dir = 'right'
+				elif((self.elbow_left_height > elbow_height_th) and (self.elbow_right_height < elbow_height_th)):
+					self.colift_dir = 'left'
+				elif((self.elbow_left_height > elbow_height_th) and (self.elbow_right_height > elbow_height_th)):
+					self.colift_dir = 'up'
+				elif((self.elbow_right_height < elbow_height_th) and (self.elbow_left_height < elbow_height_th)):
+					self.colift_dir = 'down'
+				else:
+					print("Something is wrong with COLIFT directions")
 			else:
 				if not self.colift_flag:
 					self.colift_flag = True
 				else:
 					self.colift_dir = 'null'
+			## TODO: add also "down option" 
+			# A state machine. From one mode to other, always go to "null"
 				
 		# check if still in colift
 		if(self.steering_hand_pose.position.x < -0.25 and self.steering_hand_pose.position.z < -0.15):
