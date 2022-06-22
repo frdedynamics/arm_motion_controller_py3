@@ -41,14 +41,10 @@ class RobotCommander:
 		self.robot_current_TCP = Float32MultiArray()
 		self.robot_init_joints = self.rtde_r.getActualQ()
 
-		# self.release_prev_joints = [d2r(-149.60), d2r(-58.63), d2r(59.90), d2r(7.99), d2r(41.82), d2r(-97.12)]
-		# self.release_approach_joints = [d2r(-158.48), d2r(-61.75), d2r(87.86), d2r(-14.92), d2r(33.14), d2r(-99.55)]
-		# self.release_joints = [d2r(-147.37), d2r(-51.78), d2r(71.37), d2r(-10.75), d2r(44.05), d2r(-96.53)]
-		# self.home_approach_joints = [d2r(-95.72), d2r(-85.83), d2r(95.93), d2r(-3.86), d2r(95.29), d2r(-89.49)]
-		self.release_prev_joints = self.release_poses.release_prev_joints
-		self.release_approach_joints = [d2r(-158.48), d2r(-61.75), d2r(87.86), d2r(-14.92), d2r(33.14), d2r(-99.55)]
-		self.release_joints = [d2r(-147.37), d2r(-51.78), d2r(71.37), d2r(-10.75), d2r(44.05), d2r(-96.53)]
-		self.home_approach_joints = [d2r(-95.72), d2r(-85.83), d2r(95.93), d2r(-3.86), d2r(95.29), d2r(-89.49)]
+		self.release_joints = [0.9088020324707031, -2.710853715936178, -1.2618284225463867, -2.241020818749899, -1.9657891432391565, -1.429659668599264]
+		self.release_approach_joints = [0.7912373542785645, -2.560136457482809, -1.7473573684692383, -1.9465114078917445, -2.089461151753561, -1.5463460127459925]
+		self.release_prev_joints = self.release_approach_joints = [0.7912373542785645, -2.560136457482809, -1.7473573684692383, -1.9465114078917445, -2.089461151753561, -1.5463460127459925]
+		self.home_approach_joints = [1.8097128868103027, -1.9427601299681605, -1.9727983474731445, -2.3609143696227015, -1.35020620027651, -1.5293439070331019]
 
 		print("============ Arm current pose: ", self.robot_init)
 		# self.rtde_c.moveJ(self.release_joints)
@@ -84,6 +80,7 @@ class RobotCommander:
 		self.role = "HUMAN_LEADING"  # or "ROBOT_LEADING"
 		self.hrc_status = String()
 
+		self.colift_proc = None
 
 		self.elbow_left_height = 0.0
 		self.elbow_right_height = 0.0
