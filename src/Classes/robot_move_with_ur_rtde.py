@@ -215,6 +215,13 @@ class RobotCommander:
 			selection_vector = [1, 0, 0, 0, 0, 0]
 			wrench = [-40.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 			limits = [0.5, 0.1, 0.1, 0.17, 0.17, 0.17]
+
+		elif self.colift_dir == 'down':
+			print(self.state)
+			vector = self.rtde_r.getActualTCPPose()
+			selection_vector = [1, 0, 0, 0, 0, 0]
+			wrench = [20.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+			limits = [0.5, 0.1, 0.1, 0.17, 0.17, 0.17]
 		
 		print(_curr_force[1])
 		
