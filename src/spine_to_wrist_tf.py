@@ -15,7 +15,7 @@ wrist_right_pose = Pose()
 elbow_left_pose = Pose()
 elbow_right_pose = Pose()
 
-ref = 'human/spine_0'
+ref = 'human/spine_0' ## TODO: set param this 
 
 
 if __name__ == '__main__':
