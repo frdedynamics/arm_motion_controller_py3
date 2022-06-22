@@ -24,7 +24,7 @@ if __name__ == '__main__':
     sub_emg = rospy.Subscriber('/myo_raw/myo_emg', EmgArray, cb_emg)
     pub_emg_sum = rospy.Publisher('/emg_sum', Int16, queue_size=1)
     pub_gripper = rospy.Publisher('/cmd_grip_bool', Bool, queue_size=1)
-    rate = rospy.Rate(2.0)
+    rate = rospy.Rate(10)
 
     try:
         emg_sum_th = rospy.get_param("/emg_sum_th")

@@ -96,6 +96,7 @@ class RobotCommander:
 		self.tcp_ori_init = Vector3()
 
 		self.do_flag = 0
+		rospy.set_param('/robot_move_started', True)
                
 
 	def init_subscribers_and_publishers(self):
@@ -219,7 +220,7 @@ class RobotCommander:
 			print(self.state)
 			vector = self.rtde_r.getActualTCPPose()
 			selection_vector = [1, 0, 0, 0, 0, 0]
-			wrench = [20.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+			wrench = [5.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 			limits = [0.5, 0.1, 0.1, 0.17, 0.17, 0.17]
 		
 		print(_curr_force[1])
@@ -244,7 +245,8 @@ class RobotCommander:
 					self.colift_flag = True
 				else:
 					self.colift_dir = 'null'
-			## TODO: add also "down option" 
+					self.rtde_c.servoStop()
+					self.rtde_c.forceModeStop()
 			# A state machine. From one mode to other, always go to "null"
 				
 		# check if still in colift
