@@ -26,7 +26,8 @@ class RobotCommander:
 	def __init__(self, rate=100, start_node=False, s=1.0, k=1.0):
 		"""Initializes the robot commander
 			@params s: motion hand - steering hand scale
-			@params k: target hand pose - robot pose scale"""
+			@params k: target hand pose - robot pose scale
+			#TODO: Divide it human and robot later"""
 		self.rtde_c = RTDEControl("172.31.1.144", RTDEControl.FLAG_USE_EXT_UR_CAP)
 		self.rtde_r = rtde_receive.RTDEReceiveInterface("172.31.1.144")
 
@@ -35,15 +36,16 @@ class RobotCommander:
 			self.r = rospy.Rate(rate)
 			print("robot_move_with_ur_rtde Node Created")
 
-
+	
 		self.robot_init = self.rtde_r.getActualTCPPose()
 		self.robot_current_TCP = Float32MultiArray()
 		self.robot_init_joints = self.rtde_r.getActualQ()
-		# self.release_prev_joints = [d2r(-156.66), d2r(-40.38), d2r(58.48), d2r(-16.06), d2r(38.70), d2r(-94.83)]
-		# self.release_approach_joints = [d2r(-175.82), d2r(-44.7), d2r(85.04), d2r(-36.80), d2r(19.64), d2r(-96.58)]
-		# self.release_joints = [d2r(-156.66), d2r(-33.67), d2r(62.73), d2r(-27.07), d2r(38.72), d2r(-94.81)]
-		# self.home_approach_joints = [d2r(-175.82), d2r(-58.56), d2r(73.26), d2r(-11.08), d2r(19.57), d2r(-96.67)]
-		self.release_prev_joints = [d2r(-149.60), d2r(-58.63), d2r(59.90), d2r(7.99), d2r(41.82), d2r(-97.12)]
+
+		# self.release_prev_joints = [d2r(-149.60), d2r(-58.63), d2r(59.90), d2r(7.99), d2r(41.82), d2r(-97.12)]
+		# self.release_approach_joints = [d2r(-158.48), d2r(-61.75), d2r(87.86), d2r(-14.92), d2r(33.14), d2r(-99.55)]
+		# self.release_joints = [d2r(-147.37), d2r(-51.78), d2r(71.37), d2r(-10.75), d2r(44.05), d2r(-96.53)]
+		# self.home_approach_joints = [d2r(-95.72), d2r(-85.83), d2r(95.93), d2r(-3.86), d2r(95.29), d2r(-89.49)]
+		self.release_prev_joints = self.release_poses.release_prev_joints
 		self.release_approach_joints = [d2r(-158.48), d2r(-61.75), d2r(87.86), d2r(-14.92), d2r(33.14), d2r(-99.55)]
 		self.release_joints = [d2r(-147.37), d2r(-51.78), d2r(71.37), d2r(-10.75), d2r(44.05), d2r(-96.53)]
 		self.home_approach_joints = [d2r(-95.72), d2r(-85.83), d2r(95.93), d2r(-3.86), d2r(95.29), d2r(-89.49)]
