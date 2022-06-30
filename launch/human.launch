@@ -14,11 +14,11 @@
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find arm_motion_controller_py3)/launch/config/config_with_myo.rviz"/> 
 
 
-  <!-- publish joint state
-  <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
-    <param name="use_gui" value="True"/>
-    <remap from="joint_states" to="/joint_states_human" />
-  </node>-->
+  <!-- Publish joint state -->
+    <!-- <node name="joint_state_publisher_gui" pkg="joint_state_publisher_gui" type="joint_state_publisher_gui">
+      <remap from="joint_states" to="joint_states_human" />
+      <remap from="robot_description" to="human_description" />
+    </node> -->
 
   <!-- Start IMU subscriber node (after awindamonitor started) -->
   <node name="imu_subscriber_node" type="imu_subscriber_node.py" pkg="arm_motion_controller_py3" />
