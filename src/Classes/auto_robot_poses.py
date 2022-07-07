@@ -27,6 +27,9 @@ class RobotPoses:
 		self.release_joints = [d2r(-147.37), d2r(-51.78), d2r(71.37), d2r(-10.75), d2r(44.05), d2r(-96.53)]
 		self.home_approach_joints = [d2r(-95.72), d2r(-85.83), d2r(95.93), d2r(-3.86), d2r(95.29), d2r(-89.49)]
 
+		self.current_joints = self.rtde_r.getActualQ()
+		self.tcp_offset = [0.0, 0.0, 0.14, 0.0, 0.0, 0.0] # self.rtde_c.getTCPOffset() non-responsive
+
 		print("initialized")
 
 		if mode == "manual":
@@ -36,10 +39,10 @@ class RobotPoses:
 			self.release_joints = self.rtde_r.getActualQ()
 			print("RELEASE: ", self.release_joints)
 
-			print("Move the robot to RELEASE APPROACH pose and then press Enter")
+			print("Move the robot to BEFORE RELEASE pose and then press Enter")
 			input()
-			self.release_approach_joints = self.rtde_r.getActualQ()
-			print("RELEASE APPROACH: ", self.release_approach_joints)
+			self.before_release_joints = self.rtde_r.getActualQ()
+			print("BEFORE RELEASE: ", self.before_release_joints)
 
 			print("The robot WILL MOVE TO RELEASE pose again. Press Enter to continue...")
 			input()
@@ -47,17 +50,26 @@ class RobotPoses:
 			self.rtde_c.moveJ(self.release_joints)
 			self.rtde_c.teachMode()
 
-			print("Move the robot to RELEASE PREVIOUS pose and then press Enter")
+			print("Move the robot to AFTER RELEASE pose and then press Enter")
 			input()
-			self.release_prev_joints = self.rtde_r.getActualQ()
-			print("RELEASE PREV: ", self.release_prev_joints)
+			self.after_release_joints = self.rtde_r.getActualQ()
+			print("AFTER RELEASE: ", self.after_release_joints)
 
-			print("Move the robot to HOME APPROACH pose and then press Enter")
+			print("Move the robot to BEFORE HOME pose and then press Enter")
 			input()
-			self.home_approach_joints = self.rtde_r.getActualQ()
-			print("HOME APPROACH: ", self.home_approach_joints)
+			self.before_home_joints = self.rtde_r.getActualQ()
+			print("BEFORE HOME: ", self.before_home_joints)
 			self.rtde_c.endTeachMode()
+
+		elif mode == "test":
+			current_pose = self.rtde_c.getForwardKinematics(self.current_joints, self.tcp_offset)
+			print(current_pose)
+			goal_pose = current_pose
+			goal_pose[1] += 0.001
+			# use rtde_c.poseTrans() for changing moveL frame. Base frame atm.
+			self.rtde_c.moveL(current_pose)
+
 
 
 if __name__ == '__main__':
-    RobotPoses(RTDEControl("172.31.1.144", RTDEControl.FLAG_USE_EXT_UR_CAP), rtde_receive.RTDEReceiveInterface("172.31.1.144"), mode="manual")
+    RobotPoses(RTDEControl("172.31.1.144", RTDEControl.FLAG_USE_EXT_UR_CAP), rtde_receive.RTDEReceiveInterface("172.31.1.144"), mode="test")
