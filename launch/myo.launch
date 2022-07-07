@@ -8,6 +8,7 @@
   <node pkg="ros_myo" name="myo_raw" type="myo-rawNode.py" args="$(arg port)" output="screen"/>
   <node pkg="arm_motion_controller_py3" name="world_to_myo_tf_publisher" type="world_to_myo.py"/>
 
-  <node pkg="arm_motion_controller_py3" name="emg_to_gripper" type="emg_to_gripper.py"/>  
+  <!--<node pkg="arm_motion_controller_py3" name="emg_to_gripper" type="emg_to_gripper.py"/>  -->
+  <node pkg="imu_human_pkg" name="emg_sum_node" type="emg_sum_node.py"/>  
 
 </launch>

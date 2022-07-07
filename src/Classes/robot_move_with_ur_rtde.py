@@ -43,6 +43,7 @@ class RobotCommander:
 
 		self.release_joints = [0.9088020324707031, -2.710853715936178, -1.2618284225463867, -2.241020818749899, -1.9657891432391565, -1.429659668599264]
 		self.release_approach_joints = [0.7912373542785645, -2.560136457482809, -1.7473573684692383, -1.9465114078917445, -2.089461151753561, -1.5463460127459925]
+		Exception("set release_prev_joints again")
 		self.release_prev_joints = self.release_approach_joints = [0.7912373542785645, -2.560136457482809, -1.7473573684692383, -1.9465114078917445, -2.089461151753561, -1.5463460127459925]
 		self.home_approach_joints = [1.8097128868103027, -1.9427601299681605, -1.9727983474731445, -2.3609143696227015, -1.35020620027651, -1.5293439070331019]
 
@@ -215,38 +216,26 @@ class RobotCommander:
 			selection_vector = [1, 0, 0, 0, 0, 0]
 			wrench = [-40.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 			limits = [0.5, 0.1, 0.1, 0.17, 0.17, 0.17]
-
-		elif self.colift_dir == 'down':
-			print(self.state)
-			vector = self.rtde_r.getActualTCPPose()
-			selection_vector = [1, 0, 0, 0, 0, 0]
-			wrench = [5.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-			limits = [0.5, 0.1, 0.1, 0.17, 0.17, 0.17]
 		
 		print(_curr_force[1])
 		
 		if abs(_curr_force[1]) > 27.0:
 		# if self.tcp_ori.x > 0.6:
-			if self.colift_dir == 'null':
-				# colift_dir = ''
-				# colift_dir_past = ''
-				if((self.elbow_right_height > elbow_height_th) and (self.elbow_left_height < elbow_height_th)):
-					self.colift_dir = 'right'
-				elif((self.elbow_left_height > elbow_height_th) and (self.elbow_right_height < elbow_height_th)):
-					self.colift_dir = 'left'
-				elif((self.elbow_left_height > elbow_height_th) and (self.elbow_right_height > elbow_height_th)):
-					self.colift_dir = 'up'
-				elif((self.elbow_right_height < elbow_height_th) and (self.elbow_left_height < elbow_height_th)):
-					self.colift_dir = 'down'
-				else:
-					print("Something is wrong with COLIFT directions")
+			print("Side movement")
+			elbow_height_th = 0.2
+			# colift_dir = ''
+			# colift_dir_past = ''
+			if((self.elbow_right_height > elbow_height_th) and (self.elbow_left_height < elbow_height_th)):
+				self.colift_dir = 'right'
+			elif((self.elbow_left_height > elbow_height_th) and (self.elbow_right_height < elbow_height_th)):
+				self.colift_dir = 'left'
+			elif((self.elbow_left_height > elbow_height_th) and (self.elbow_right_height > elbow_height_th)):
+				self.colift_dir = 'up'
 			else:
 				if not self.colift_flag:
 					self.colift_flag = True
 				else:
 					self.colift_dir = 'null'
-					self.rtde_c.servoStop()
-					self.rtde_c.forceModeStop()
 			# A state machine. From one mode to other, always go to "null"
 				
 		# check if still in colift
