@@ -71,7 +71,9 @@ class RobotPoses:
 		
 		elif mode == "test2":
 			print(self.rtde_r.getActualQ())
+			goal_joint = [1.617659568786621, -1.95817293743276, -2.140641212463379, -2.156917234460348, -1.530267063771383, -1.6029561201678675]
+			self.rtde_c.moveJ(goal_joint)
 
 
 if __name__ == '__main__':
-    RobotPoses(RTDEControl("172.31.1.144", RTDEControl.FLAG_USE_EXT_UR_CAP), rtde_receive.RTDEReceiveInterface("172.31.1.144"), mode="test")
+    RobotPoses(RTDEControl("172.31.1.144", RTDEControl.FLAG_USE_EXT_UR_CAP), rtde_receive.RTDEReceiveInterface("172.31.1.144"), mode="test2")
