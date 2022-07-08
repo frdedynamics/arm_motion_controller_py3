@@ -68,7 +68,9 @@ class RobotPoses:
 			goal_pose[1] += 0.001
 			# use rtde_c.poseTrans() for changing moveL frame. Base frame atm.
 			self.rtde_c.moveL(current_pose)
-
+		
+		elif mode == "test2":
+			print(self.rtde_r.getActualQ())
 
 
 if __name__ == '__main__':
