@@ -39,27 +39,27 @@ class RobotPoses:
 			self.release_joints = self.rtde_r.getActualQ()
 			print("RELEASE: ", self.release_joints)
 
-			print("Move the robot to BEFORE RELEASE pose and then press Enter")
-			input()
-			self.before_release_joints = self.rtde_r.getActualQ()
-			print("BEFORE RELEASE: ", self.before_release_joints)
+			# print("Move the robot to BEFORE RELEASE pose and then press Enter")
+			# input()
+			# self.before_release_joints = self.rtde_r.getActualQ()
+			# print("BEFORE RELEASE: ", self.before_release_joints)
 
-			print("The robot WILL MOVE TO RELEASE pose again. Press Enter to continue...")
-			input()
-			self.rtde_c.endTeachMode()
-			self.rtde_c.moveJ(self.release_joints)
-			self.rtde_c.teachMode()
+			# print("The robot WILL MOVE TO RELEASE pose again. Press Enter to continue...")
+			# input()
+			# self.rtde_c.endTeachMode()
+			# self.rtde_c.moveJ(self.release_joints)
+			# self.rtde_c.teachMode()
 
-			print("Move the robot to AFTER RELEASE pose and then press Enter")
-			input()
-			self.after_release_joints = self.rtde_r.getActualQ()
-			print("AFTER RELEASE: ", self.after_release_joints)
+			# print("Move the robot to AFTER RELEASE pose and then press Enter")
+			# input()
+			# self.after_release_joints = self.rtde_r.getActualQ()
+			# print("AFTER RELEASE: ", self.after_release_joints)
 
-			print("Move the robot to BEFORE HOME pose and then press Enter")
-			input()
-			self.before_home_joints = self.rtde_r.getActualQ()
-			print("BEFORE HOME: ", self.before_home_joints)
-			self.rtde_c.endTeachMode()
+			# print("Move the robot to BEFORE HOME pose and then press Enter")
+			# input()
+			# self.before_home_joints = self.rtde_r.getActualQ()
+			# print("BEFORE HOME: ", self.before_home_joints)
+			# self.rtde_c.endTeachMode()
 
 		elif mode == "test":
 			current_pose = self.rtde_c.getForwardKinematics(self.current_joints, self.tcp_offset)
@@ -76,4 +76,4 @@ class RobotPoses:
 
 
 if __name__ == '__main__':
-    RobotPoses(RTDEControl("172.31.1.144", RTDEControl.FLAG_USE_EXT_UR_CAP), rtde_receive.RTDEReceiveInterface("172.31.1.144"), mode="test2")
+    RobotPoses(RTDEControl("172.31.1.144", RTDEControl.FLAG_USE_EXT_UR_CAP), rtde_receive.RTDEReceiveInterface("172.31.1.144"), mode="manual")
